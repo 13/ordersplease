@@ -35,6 +35,7 @@
   import { denomLabel } from '../lib/denom-view';
   import { chaChing, coinClink, errorBuzz, tickTock } from '../lib/sound';
   import { PausableTimer } from '../lib/pausable';
+  import Money from '../lib/Money.svelte';
   import EndOverlay from '../lib/EndOverlay.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
   import PauseOverlay from '../lib/PauseOverlay.svelte';
@@ -530,39 +531,43 @@
 
     <MenuCard menu={session.menu} pricesHidden={menuHidden} {symbolFirst} />
 
-    {#if round.phase === 'sum'}
-      {#if numpadLocked}
-        <p class="prompt">{$t('game.tab-wait')}</p>
-      {:else}
-        <p class="prompt">{$t('game.sum-prompt')}</p>
-        <Numpad onsubmit={onSum} {symbolFirst} bindApi={(api) => (numpadApi = api)} />
-        <button class="tipp" onclick={onTipp}>{$t('game.tipp')} (−25)</button>
-      {/if}
-    {:else if round.phase === 'change'}
-      <p class="prompt">
-        {$t('game.pays')}:
-        {#each [...round.paymentPieces].sort((a, b) => b - a) as p}
-          <span class="paid">{denomLabel(p)}</span>
-        {/each}
-      </p>
-      <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} showKeys={hasKeyboard} />
-      <ChangePile {pile} showTotal={session.params.showPileTotal} onreturn={ret} />
-      <div class="actions">
-        <button class="confirm" onclick={confirmChange}>
-          {round.changeDue === 0 ? $t('game.finish') : $t('game.confirm')}
-        </button>
-        <button class="ask" onclick={() => (askOpen = !askOpen)}>{$t('game.ask')}</button>
-        <button class="ask" onclick={onNotEnough}>{$t('game.not-enough')}</button>
-        <button class="tipp" onclick={onTipp}>{$t('game.tipp')}</button>
+    {#key round.phase}
+      <div class="phase">
+        {#if round.phase === 'sum'}
+          {#if numpadLocked}
+            <p class="prompt">{$t('game.tab-wait')}</p>
+          {:else}
+            <p class="prompt">{$t('game.sum-prompt')}</p>
+            <Numpad onsubmit={onSum} {symbolFirst} bindApi={(api) => (numpadApi = api)} />
+            <button class="tipp" onclick={onTipp}>{$t('game.tipp')} (−25)</button>
+          {/if}
+        {:else if round.phase === 'change'}
+          <p class="prompt">
+            {$t('game.pays')}:
+            {#each [...round.paymentPieces].sort((a, b) => b - a) as p, i (i)}
+              <Money denom={p} />
+            {/each}
+          </p>
+          <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} showKeys={hasKeyboard} />
+          <ChangePile {pile} showTotal={session.params.showPileTotal} onreturn={ret} />
+          <div class="actions">
+            <button class="confirm" onclick={confirmChange}>
+              {round.changeDue === 0 ? $t('game.finish') : $t('game.confirm')}
+            </button>
+            <button class="ask" onclick={() => (askOpen = !askOpen)}>{$t('game.ask')}</button>
+            <button class="ask" onclick={onNotEnough}>{$t('game.not-enough')}</button>
+            <button class="tipp" onclick={onTipp}>{$t('game.tipp')}</button>
+          </div>
+          {#if askOpen}
+            <div class="ask-row">
+              {#each COIN_DENOMS as d (d)}
+                <button onclick={() => onAsk(d)}>{$t('game.ask-for')} {denomLabel(d)}?</button>
+              {/each}
+            </div>
+          {/if}
+        {/if}
       </div>
-      {#if askOpen}
-        <div class="ask-row">
-          {#each COIN_DENOMS as d (d)}
-            <button onclick={() => onAsk(d)}>{$t('game.ask-for')} {denomLabel(d)}?</button>
-          {/each}
-        </div>
-      {/if}
-    {/if}
+    {/key}
   {/if}
 
   {#if flash}<div class="flash">{flash}</div>{/if}
@@ -615,11 +620,13 @@
   .tipp { background: var(--wood-light); color: var(--cream); }
   .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
   .prompt { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: baseline; }
-  .paid {
-    background: var(--cream); color: var(--ink);
-    padding: 0.1rem 0.5rem; border-radius: 6px; font-weight: bold;
+  .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
+  .actions {
+    display: flex; gap: 0.5rem;
+    position: sticky; bottom: 0;
+    padding: var(--space-2) 0 calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--wood);
   }
-  .actions { display: flex; gap: 0.5rem; }
   .confirm { flex: 1; background: var(--ok); color: var(--cream); font-size: 1.1rem; }
   .ask { background: var(--accent); color: var(--ink); }
   .ask-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }

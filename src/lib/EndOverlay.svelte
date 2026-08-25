@@ -22,14 +22,34 @@
   const fullRounds = $derived(session.roundLog.filter((e) => !e.sub));
   const served = $derived(fullRounds.filter((e) => e.success).length);
   const showAccuracy = $derived(session.mode === 'practice' || session.mode === 'daily');
+
+  let displayScore = $state(0);
+  $effect(() => {
+    const target = session.score;
+    const steps = 20;
+    let i = 0;
+    displayScore = 0;
+    const iv = setInterval(() => {
+      i += 1;
+      displayScore = Math.round((target * i) / steps);
+      if (i >= steps) clearInterval(iv);
+    }, 30);
+    return () => clearInterval(iv);
+  });
 </script>
 
 <div class="overlay">
   <h2>{session.finished === 'won' ? $t('result.won') : $t('result.lost')}</h2>
   {#if session.mode === 'level' && session.finished === 'won'}
-    <p class="stars">{'★'.repeat(stars)}{'☆'.repeat(3 - stars)}</p>
+    <p class="stars">
+      {#each [0, 1, 2] as i (i)}
+        <span class="star" class:earned={i < stars} style="animation-delay: {i * 0.25}s">
+          {i < stars ? '★' : '☆'}
+        </span>
+      {/each}
+    </p>
   {/if}
-  <p>{$t('game.score')}: {session.score}</p>
+  <p>{$t('game.score')}: {displayScore}</p>
   {#if showAccuracy}
     <p>{$t('result.accuracy')}: {served}/{fullRounds.length}</p>
   {/if}
@@ -59,6 +79,8 @@
     gap: 0.75rem; text-align: center; padding: 1rem;
   }
   .stars { font-size: 2.2rem; color: var(--accent); }
+  .star { display: inline-block; animation: op-pop 0.3s ease-out both; }
+  .star.earned { color: var(--accent); }
   .note { color: var(--accent); font-size: 0.9rem; }
   .overlay-actions { display: flex; flex-direction: column; gap: 0.5rem; width: 240px; }
   .overlay-actions button { background: var(--accent); color: var(--ink); font-size: 1.1rem; }
