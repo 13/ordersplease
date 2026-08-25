@@ -41,8 +41,8 @@ export function nextDailyRecord(
 }
 
 function formatPts(score: number): string {
-  const formatter = new Intl.NumberFormat('de-DE', { useGrouping: true });
-  return formatter.format(score).replace(/\s/g, '.'); // 3450 → "3.450"
+  // locale-independent thousands dot: 3450 → "3.450"
+  return String(score).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 export function shareText(
