@@ -5,6 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
 
 export default defineConfig({
+  base: process.env.OP_BASE ?? '/',
   plugins: [
     svelte(),
     VitePWA({
