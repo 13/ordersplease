@@ -96,3 +96,55 @@ export function generatePayment(
   // awkward: round note(s) plus one random small coin on top
   return [...roundNotes(totalCents), pick(COIN_DENOMS, rng)];
 }
+
+/** Payment that is plausibly short: exact decomposition minus its largest piece,
+ *  or (single-piece totals) the next denomination below. */
+export function generateUnderPayment(totalCents: Cents, rng: () => number): Denom[] {
+  const pieces = exactPieces(totalCents);
+  if (pieces.length > 1) {
+    // drop one piece — bias toward a small one so the shortfall isn't obvious
+    const dropIdx = rng() < 0.5 ? pieces.length - 1 : 0;
+    return pieces.toSpliced(dropIdx, 1);
+  }
+  const below = DENOMS.filter((d) => d < pieces[0]);
+  return [below[0] ?? 5];
+}
+
+export interface Tab {
+  waves: Order[];
+  merged: Order;
+}
+
+/** 2-3 waves of 1-2 items each; merged combines lines by item id. */
+export function generateTab(
+  menu: MenuItem[], params: DifficultyParams, rng: () => number,
+): Tab {
+  const waveCount = 2 + (rng() < 0.4 ? 1 : 0);
+  const waveParams = { ...params, itemsMin: 1, itemsMax: 2 };
+  const waves: Order[] = [];
+  for (let w = 0; w < waveCount; w++) waves.push(generateOrder(menu, waveParams, rng));
+  const byId = new Map<string, OrderLine>();
+  for (const wave of waves) {
+    for (const line of wave.lines) {
+      const existing = byId.get(line.item.id);
+      if (existing) byId.set(line.item.id, { ...existing, qty: existing.qty + line.qty });
+      else byId.set(line.item.id, { ...line });
+    }
+  }
+  const lines = [...byId.values()];
+  return { waves, merged: { lines, totalCents: orderTotal(lines) } };
+}
+
+/** Disjoint 2-3 way partition of the order's lines; <2 lines → single group. */
+export function splitOrder(order: Order, rng: () => number): OrderLine[][] {
+  if (order.lines.length < 2) return [order.lines];
+  const groupCount = Math.min(order.lines.length, 2 + (rng() < 0.4 ? 1 : 0));
+  const groups: OrderLine[][] = Array.from({ length: groupCount }, () => []);
+  // deal one line to each group first so none is empty, then scatter the rest
+  const shuffled = [...order.lines].sort(() => rng() - 0.5);
+  shuffled.forEach((line, i) => {
+    const target = i < groupCount ? i : Math.floor(rng() * groupCount);
+    groups[target].push(line);
+  });
+  return groups;
+}

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   mulberry32, generateOrder, amendOrder, generatePayment, orderTotal, piecesTotal,
+  generateUnderPayment, generateTab, splitOrder,
 } from '$core/order';
 import { DEFAULT_MENU } from '$core/menu';
 import { paramsForLevel } from '$core/difficulty';
@@ -75,5 +76,58 @@ describe('generatePayment', () => {
     expect(pieces.some((p) => p >= 500)).toBe(true);
     expect(pieces.some((p) => p <= 200)).toBe(true);
     expect(piecesTotal(pieces)).toBeGreaterThan(430);
+  });
+});
+
+describe('generateUnderPayment', () => {
+  it('always sums strictly below the total but above zero', () => {
+    const rng = mulberry32(21);
+    for (let i = 0; i < 100; i++) {
+      const total = 5 * (1 + Math.floor(rng() * 2000));
+      const pieces = generateUnderPayment(total, rng);
+      expect(piecesTotal(pieces)).toBeGreaterThan(0);
+      expect(piecesTotal(pieces)).toBeLessThan(total);
+    }
+  });
+});
+
+describe('generateTab', () => {
+  it('produces 2-3 waves whose totals sum to the merged total', () => {
+    const rng = mulberry32(31);
+    for (let i = 0; i < 30; i++) {
+      const tab = generateTab(DEFAULT_MENU, paramsForLevel(20), rng);
+      expect(tab.waves.length).toBeGreaterThanOrEqual(2);
+      expect(tab.waves.length).toBeLessThanOrEqual(3);
+      const waveSum = tab.waves.reduce((s, w) => s + w.totalCents, 0);
+      expect(tab.merged.totalCents).toBe(waveSum);
+    }
+  });
+  it('merged lines combine duplicate items by id', () => {
+    const rng = mulberry32(32);
+    const tab = generateTab(DEFAULT_MENU, paramsForLevel(20), rng);
+    const ids = tab.merged.lines.map((l) => l.item.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('splitOrder', () => {
+  it('partitions into 2-3 disjoint groups covering all lines', () => {
+    const rng = mulberry32(41);
+    for (let i = 0; i < 30; i++) {
+      const order = generateOrder(DEFAULT_MENU, { ...paramsForLevel(25), itemsMin: 3, itemsMax: 6 }, rng);
+      if (order.lines.length < 2) continue;
+      const groups = splitOrder(order, rng);
+      expect(groups.length).toBeGreaterThanOrEqual(2);
+      expect(groups.length).toBeLessThanOrEqual(3);
+      for (const g of groups) expect(g.length).toBeGreaterThan(0);
+      const flat = groups.flat();
+      expect(flat.length).toBe(order.lines.length);
+      expect(new Set(flat).size).toBe(order.lines.length); // same line objects, no duplicates
+    }
+  });
+  it('single-line order returns one group', () => {
+    const rng = mulberry32(42);
+    const order = { lines: [{ item: DEFAULT_MENU[0], qty: 2 }], totalCents: 800 };
+    expect(splitOrder(order, rng)).toEqual([order.lines]);
   });
 });
