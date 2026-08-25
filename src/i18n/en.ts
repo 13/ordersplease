@@ -21,6 +21,7 @@ export default {
   'game.change-was': 'Right change was',
   'game.not-enough': "That's not enough!",
   'game.trap-good': 'Right — that was short!',
+  'game.tab-wait': 'Still ordering…',
   'game.dispute-claim': 'I gave you {note}!',
   'game.dispute-question': 'What did they really pay?',
   'game.dispute-right': 'Good memory! +25',

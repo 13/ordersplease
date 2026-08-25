@@ -8,7 +8,7 @@
   import { progress } from '../stores/progress';
   import { t } from '../i18n';
   import {
-    createSession, tickSession, completeRound, spawnCustomer, MAX_LIVES,
+    createSession, tickSession, completeRound, completeSubRound, spawnCustomer, MAX_LIVES,
   } from '../core/session';
   import {
     createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment,
@@ -16,9 +16,10 @@
   } from '../core/round';
   import {
     generateOrder, generatePayment, generateUnderPayment, amendOrder, piecesTotal,
+    generateTab, splitOrder, orderTotal,
   } from '../core/order';
   import { maybeDispute, type Dispute } from '../core/dispute';
-  import { renderOrder, renderAmendment } from '../core/text-order';
+  import { renderOrder, renderAmendment, renderWave, renderPayer } from '../core/text-order';
   import { starsFor } from '../core/scoring';
   import { formatEuro } from '../core/money';
   import { COIN_DENOMS, type Denom } from '../core/till';
@@ -53,6 +54,10 @@
   let amendTimer: ReturnType<typeof setTimeout> | undefined;
   let menuTimer: ReturnType<typeof setTimeout> | undefined;
   let flashTimer: ReturnType<typeof setTimeout> | undefined;
+  let numpadLocked = $state(false);
+  let waveTimer: ReturnType<typeof setTimeout> | undefined;
+  let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
+  let payerIndex = $state(0);
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -67,37 +72,72 @@
 
   function startRound() {
     clearTimeout(amendTimer);
+    clearTimeout(waveTimer);
     if (session.finished || round || flash) return;
     if (session.queue.length === 0) {
       if (session.mode === 'rush') return; // rush waits for the spawn timer
       session = spawnCustomer(session);
     }
-    const order = generateOrder(session.menu, session.params, session.rng);
-    const payment = session.rng() < session.params.underpayProb
-      ? generateUnderPayment(order.totalCents, session.rng)
-      : generatePayment(order.totalCents, session.params.paymentStyle, session.rng);
-    round = createRound(order, payment, session.till);
-    orderText = renderOrder(order, $settings.locale);
+    numpadLocked = false;
+    splitGroups = null;
+    payerIndex = 0;
     amendText = null;
     pile = [];
     askOpen = false;
-    roundStartedAt = performance.now();
 
-    if (session.rng() < session.params.midOrderChangeProb) {
-      const amended = amendOrder(order, session.rng);
-      amendTimer = setTimeout(() => {
-        if (round && round.phase === 'sum') {
-          const pieces = generatePayment(
-            amended.order.totalCents, session.params.paymentStyle, session.rng,
-          );
-          round = {
-            ...round, order: amended.order,
-            paymentPieces: pieces, paymentCents: piecesTotal(pieces),
-          };
-          amendText = renderAmendment(amended.amendedLine, $settings.locale);
+    const roll = session.rng();
+    const makePayment = (cents: number) =>
+      session.rng() < session.params.underpayProb
+        ? generateUnderPayment(cents, session.rng)
+        : generatePayment(cents, session.params.paymentStyle, session.rng);
+
+    if (roll < session.params.tabProb) {
+      // running tab: merged order drives the round; waves reveal over time
+      const tab = generateTab(session.menu, session.params, session.rng);
+      round = createRound(tab.merged, makePayment(tab.merged.totalCents), session.till, 'tab');
+      orderText = renderOrder(tab.waves[0], $settings.locale);
+      numpadLocked = true;
+      let waveIdx = 1;
+      const revealNext = () => {
+        if (!round || round.phase !== 'sum') return;
+        orderText += ' ' + renderWave(tab.waves[waveIdx], $settings.locale);
+        waveIdx += 1;
+        if (waveIdx < tab.waves.length) waveTimer = setTimeout(revealNext, 3500);
+        else numpadLocked = false;
+      };
+      waveTimer = setTimeout(revealNext, 3500);
+    } else {
+      const order = generateOrder(session.menu, session.params, session.rng);
+      const groups = roll < session.params.tabProb + session.params.splitProb
+        ? splitOrder(order, session.rng)
+        : null;
+      if (groups && groups.length >= 2) {
+        // split bill: full order shown, first payer starts
+        splitGroups = groups;
+        const sub = { lines: groups[0], totalCents: orderTotal(groups[0]) };
+        round = createRound(sub, makePayment(sub.totalCents), session.till, 'split');
+        orderText = `${renderOrder(order, $settings.locale)} ${renderPayer(groups[0], $settings.locale)}`;
+      } else {
+        round = createRound(order, makePayment(order.totalCents), session.till);
+        orderText = renderOrder(order, $settings.locale);
+        if (session.rng() < session.params.midOrderChangeProb) {
+          const amended = amendOrder(order, session.rng);
+          amendTimer = setTimeout(() => {
+            if (round && round.phase === 'sum' && round.kind === 'normal') {
+              const pieces = generatePayment(
+                amended.order.totalCents, session.params.paymentStyle, session.rng,
+              );
+              round = {
+                ...round, order: amended.order,
+                paymentPieces: pieces, paymentCents: piecesTotal(pieces),
+              };
+              amendText = renderAmendment(amended.amendedLine, $settings.locale);
+            }
+          }, 2500);
         }
-      }, 2500);
+      }
     }
+    roundStartedAt = performance.now();
 
     const vis = session.params.menuVisibleSeconds;
     clearTimeout(menuTimer);
@@ -107,8 +147,34 @@
     }
   }
 
+  function nextPayer() {
+    if (!round || !splitGroups) return;
+    const done = round;
+    const ms = performance.now() - roundStartedAt;
+    stats.update((s) => recordRound(s, done.errors, ms, false));
+    session = completeSubRound(session, done, {
+      orderText: renderPayer(splitGroups[payerIndex], $settings.locale), ms,
+    });
+    chaChing($settings.sound);
+    payerIndex += 1;
+    const group = splitGroups[payerIndex];
+    const sub = { lines: group, totalCents: orderTotal(group) };
+    const payment = session.rng() < session.params.underpayProb
+      ? generateUnderPayment(sub.totalCents, session.rng)
+      : generatePayment(sub.totalCents, session.params.paymentStyle, session.rng);
+    round = createRound(sub, payment, session.till, 'split');
+    orderText = orderText.replace(/ [^.]*\.$/, '') + ' ' + renderPayer(group, $settings.locale);
+    pile = [];
+    askOpen = false;
+    roundStartedAt = performance.now();
+  }
+
   function finishRound() {
     if (!round) return;
+    if (splitGroups && round.success === true && payerIndex < splitGroups.length - 1) {
+      nextPayer();
+      return;
+    }
     const done = round;
     const ms = performance.now() - roundStartedAt;
     const failed = done.success !== true;
@@ -126,7 +192,9 @@
     session = completeRound(session, done, { orderText, ms });
     round = null;
     pile = [];
+    splitGroups = null;
     clearTimeout(amendTimer);
+    clearTimeout(waveTimer);
     clearTimeout(menuTimer);
     clearTimeout(flashTimer);
     flashTimer = setTimeout(() => {
@@ -217,6 +285,7 @@
   // retry keeps the same hash, so {#key $route} never remounts — reset in place
   function restart() {
     clearTimeout(amendTimer);
+    clearTimeout(waveTimer);
     clearTimeout(menuTimer);
     clearTimeout(flashTimer);
     session = createSession(
@@ -229,6 +298,7 @@
     finalized = false;
     wasNewHigh = false;
     pile = [];
+    splitGroups = null;
     startRound();
   }
 
@@ -279,6 +349,7 @@
     return () => {
       clearInterval(iv);
       clearTimeout(amendTimer);
+      clearTimeout(waveTimer);
       clearTimeout(menuTimer);
       clearTimeout(flashTimer);
     };
@@ -308,8 +379,12 @@
     <MenuCard menu={session.menu} pricesHidden={menuHidden} {symbolFirst} />
 
     {#if round.phase === 'sum'}
-      <p class="prompt">{$t('game.sum-prompt')}</p>
-      <Numpad onsubmit={onSum} {symbolFirst} />
+      {#if numpadLocked}
+        <p class="prompt">{$t('game.tab-wait')}</p>
+      {:else}
+        <p class="prompt">{$t('game.sum-prompt')}</p>
+        <Numpad onsubmit={onSum} {symbolFirst} />
+      {/if}
     {:else if round.phase === 'change'}
       <p class="prompt">
         {$t('game.pays')}:

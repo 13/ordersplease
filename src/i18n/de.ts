@@ -21,6 +21,7 @@ export default {
   'game.change-was': 'Richtiges Wechselgeld war',
   'game.not-enough': 'Das ist zu wenig!',
   'game.trap-good': 'Richtig — das war zu wenig!',
+  'game.tab-wait': 'Bestellt noch…',
   'game.dispute-claim': 'Ich habe Ihnen {note} gegeben!',
   'game.dispute-question': 'Was wurde wirklich gezahlt?',
   'game.dispute-right': 'Gutes Gedächtnis! +25',
