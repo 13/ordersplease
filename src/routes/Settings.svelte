@@ -31,6 +31,7 @@
   <label><input type="checkbox" bind:checked={$settings.symbolFirst} /> {$t('settings.symbol-first')}</label>
   <label><input type="checkbox" bind:checked={$settings.alwaysShowPrices} /> {$t('settings.show-prices')}</label>
 
+  <button class="replay" onclick={() => go('tutorial')}>{$t('settings.replay-tutorial')}</button>
   <button class="danger" onclick={resetAll}>{$t('settings.reset')}</button>
 </main>
 
@@ -41,5 +42,6 @@
   label { display: flex; align-items: center; gap: 0.6rem; }
   select { font: inherit; padding: 0.4rem; border-radius: var(--radius); }
   input[type='checkbox'] { width: 24px; height: 24px; }
+  .replay { background: var(--wood-light); color: var(--cream); }
   .danger { background: var(--danger); color: var(--cream); margin-top: 1.5rem; }
 </style>

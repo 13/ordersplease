@@ -2,6 +2,7 @@
   import { t } from '../i18n';
   import { go } from '../lib/router';
   import { progress, unlockedLevel } from '../stores/progress';
+  import { seen } from '../stores/seen';
   import { MAX_LEVEL } from '../core/difficulty';
   import { keynav } from '../lib/keynav';
 
@@ -12,6 +13,11 @@
 <main class="levels">
   <h2><button class="back" onclick={() => go('home')} aria-label={$t('nav.back')}>←</button> {$t('levels.title')}</h2>
   <div class="grid" use:keynav style="--keynav-cols: 5">
+    <button class="level tut" onclick={() => go('tutorial')}>
+      <span class="num">0</span>
+      <span class="stars">{$seen.includes('tutorial') ? '✓' : ''}</span>
+      <span class="lname">{$t('tutorial.name')}</span>
+    </button>
     {#each levels as l (l)}
       <button class="level" disabled={l > unlocked} onclick={() => go(`game/${l}`)}>
         <span class="num">{l}</span>
@@ -44,4 +50,5 @@
     overflow-wrap: anywhere; hyphens: auto;
   }
   .best { font-size: 0.6rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .tut { border: 1px dashed var(--accent); }
 </style>

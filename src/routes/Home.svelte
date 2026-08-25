@@ -5,18 +5,20 @@
   import { daily } from '../stores/daily';
   import { dailyKey } from '../core/daily';
   import { progress, unlockedLevel } from '../stores/progress';
+  import { seen } from '../stores/seen';
 
   const doneToday = $derived($daily?.date === dailyKey(new Date()));
   const level = $derived(unlockedLevel($progress));
+  const suggestTutorial = $derived(level === 1 && !$seen.includes('tutorial'));
 </script>
 
 <main class="home" use:keynav>
   <img class="logo" src="{import.meta.env.BASE_URL}icon.svg" alt="" width="96" height="96" />
   <h1>{$t('home.title')}</h1>
 
-  <button class="play" onclick={() => go(`game/${level}`)}>
-    <strong>{$t('home.play')}</strong>
-    <span>{$t('home.continue').replace('{n}', String(level))}</span>
+  <button class="play" onclick={() => go(suggestTutorial ? 'tutorial' : `game/${level}`)}>
+    <strong>{suggestTutorial ? $t('tutorial.name') : $t('home.play')}</strong>
+    <span>{suggestTutorial ? $t('home.tutorial-sub') : $t('home.continue').replace('{n}', String(level))}</span>
   </button>
 
   <div class="tiles" style="--keynav-cols: 3">
