@@ -44,3 +44,28 @@ describe('renderAmendment', () => {
       .toBe('Ach, machen Sie doch drei Beer.');
   });
 });
+
+import { renderWave, renderPayer } from '$core/text-order';
+
+describe('renderWave', () => {
+  it('EN', () => {
+    expect(renderWave({ lines: [{ item: beer, qty: 2 }], totalCents: 800 }, 'en'))
+      .toBe('And two Beers.');
+    expect(renderWave({ lines: [{ item: ven, qty: 1 }], totalCents: 500 }, 'en'))
+      .toBe('And a Veneziano.');
+  });
+  it('DE', () => {
+    expect(renderWave({ lines: [{ item: beer, qty: 2 }], totalCents: 800 }, 'de'))
+      .toBe('Und zwei Beer.');
+  });
+});
+
+describe('renderPayer', () => {
+  it('EN', () => {
+    expect(renderPayer([{ item: beer, qty: 2 }, { item: ven, qty: 1 }], 'en'))
+      .toBe('I pay two Beers and a Veneziano.');
+  });
+  it('DE', () => {
+    expect(renderPayer([{ item: beer, qty: 2 }], 'de')).toBe('Ich zahle zwei Beer.');
+  });
+});

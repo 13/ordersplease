@@ -40,3 +40,13 @@ export function renderAmendment(line: OrderLine, locale: Locale): string {
   }
   return `Ach, machen Sie doch ${lineText(line, 'de')}.`;
 }
+
+export function renderWave(order: Order, locale: Locale): string {
+  const and = locale === 'en' ? 'And' : 'Und';
+  return `${and} ${joinLines(order.lines.map((l) => lineText(l, locale)), locale)}.`;
+}
+
+export function renderPayer(lines: OrderLine[], locale: Locale): string {
+  const prefix = locale === 'en' ? 'I pay' : 'Ich zahle';
+  return `${prefix} ${joinLines(lines.map((l) => lineText(l, locale)), locale)}.`;
+}
