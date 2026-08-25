@@ -44,6 +44,7 @@
   let roundStartedAt = 0;
   let amendTimer: ReturnType<typeof setTimeout> | undefined;
   let menuTimer: ReturnType<typeof setTimeout> | undefined;
+  let flashTimer: ReturnType<typeof setTimeout> | undefined;
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -57,6 +58,7 @@
   );
 
   function startRound() {
+    clearTimeout(amendTimer);
     if (session.finished || round || flash) return;
     if (session.queue.length === 0) {
       if (session.mode === 'rush') return; // rush waits for the spawn timer
@@ -110,7 +112,8 @@
     pile = [];
     clearTimeout(amendTimer);
     clearTimeout(menuTimer);
-    setTimeout(() => {
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => {
       flash = null;
       startRound();
     }, 1400);
@@ -147,6 +150,9 @@
 
   // retry keeps the same hash, so {#key $route} never remounts — reset in place
   function restart() {
+    clearTimeout(amendTimer);
+    clearTimeout(menuTimer);
+    clearTimeout(flashTimer);
     session = createSession(
       mode, level, get(activeMenu), get(settings).useCustomMenu, Date.now() % 2 ** 31,
     );
@@ -178,7 +184,7 @@
     const iv = setInterval(() => {
       const dt = 200;
       if (session.finished) {
-        finalize();
+        if (!flash) finalize();
         return;
       }
       // head walking out during a live round = that round times out (see rules above)
@@ -187,13 +193,15 @@
         finishRound();
       }
       session = tickSession(session, dt);
-      if (session.finished) finalize();
-      else if (!round && !flash && session.queue.length > 0) startRound();
+      if (session.finished) {
+        if (!flash) finalize();
+      } else if (!round && !flash && session.queue.length > 0) startRound();
     }, 200);
     return () => {
       clearInterval(iv);
       clearTimeout(amendTimer);
       clearTimeout(menuTimer);
+      clearTimeout(flashTimer);
     };
   });
 </script>
