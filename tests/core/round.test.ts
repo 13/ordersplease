@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  createRound, submitSum, submitChange, askCustomer, timeoutRound, MAX_TRIES, challengePayment,
+  createRound, submitSum, submitChange, askCustomer, timeoutRound, MAX_TRIES, challengePayment, markHint,
 } from '$core/round';
 import { fullTill } from '$core/till';
 
@@ -161,5 +161,16 @@ describe('round kinds', () => {
     s = submitSum(s, 700);
     s = submitSum(s, 900);
     expect(s.errors).toContain('split-wrong');
+  });
+});
+
+describe('markHint', () => {
+  it('sets usedHint idempotently, no phase change', () => {
+    let s = createRound(order2beer, [1000], fullTill());
+    expect(s.usedHint).toBe(false);
+    s = markHint(s);
+    expect(s.usedHint).toBe(true);
+    expect(s.phase).toBe('sum');
+    expect(markHint(s).usedHint).toBe(true);
   });
 });

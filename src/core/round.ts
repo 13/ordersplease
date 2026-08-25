@@ -26,6 +26,7 @@ export interface RoundState {
   changeTries: number;
   usedAsk: boolean;
   usedTrapCall: boolean;
+  usedHint: boolean;
   success: boolean | null;
   errors: RoundError[];
 }
@@ -45,6 +46,7 @@ export function createRound(
     changeTries: 0,
     usedAsk: false,
     usedTrapCall: false,
+    usedHint: false,
     success: null,
     errors: [],
   };
@@ -137,4 +139,9 @@ export function askCustomer(s: RoundState, denom: Denom): RoundState {
 export function timeoutRound(s: RoundState): RoundState {
   if (s.phase === 'done') return s;
   return fail(s, ['timeout']);
+}
+
+export function markHint(s: RoundState): RoundState {
+  if (s.phase === 'done' || s.usedHint) return s;
+  return { ...s, usedHint: true };
 }

@@ -187,3 +187,14 @@ describe('rush fast-spawn', () => {
     expect(s.spawnCooldownMs).toBe(before);
   });
 });
+
+describe('hint kills the first-try bonus', () => {
+  it('a hinted perfect round scores without the 1.5x', () => {
+    let s = freshSession();
+    let r = winRound(s);
+    r = { ...r, usedHint: true };
+    s = completeRound(s, r, { orderText: 'x', ms: 500 });
+    expect(s.roundLog[0].scoreGained).toBe(300); // 100 * 3 speed, no first-try bonus
+    expect(s.streak).toBe(0); // hinted round doesn't extend the streak
+  });
+});

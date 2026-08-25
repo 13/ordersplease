@@ -128,7 +128,7 @@ function scoreAndLog(
   s: SessionState, round: RoundState, meta: RoundMeta,
 ): { gained: number; entry: RoundLogEntry; firstTry: boolean; success: boolean } {
   const success = round.success === true;
-  const firstTry = round.sumTries === 0 && round.changeTries === 0;
+  const firstTry = round.sumTries === 0 && round.changeTries === 0 && !round.usedHint;
   const gained = scoreRound({
     success, firstTry,
     usedAsk: success && round.usedAsk,
