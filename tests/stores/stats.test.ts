@@ -17,15 +17,21 @@ describe('stats', () => {
   });
   it('dayStreak counts consecutive days ending today', () => {
     let s = empty;
-    s = recordDay(s, new Date('2026-08-23'));
-    s = recordDay(s, new Date('2026-08-24'));
-    s = recordDay(s, new Date('2026-08-25'));
-    expect(dayStreak(s, new Date('2026-08-25'))).toBe(3);
+    s = recordDay(s, new Date('2026-08-23T12:00:00'));
+    s = recordDay(s, new Date('2026-08-24T12:00:00'));
+    s = recordDay(s, new Date('2026-08-25T12:00:00'));
+    expect(dayStreak(s, new Date('2026-08-25T12:00:00'))).toBe(3);
   });
   it('gap breaks the streak', () => {
     let s = empty;
-    s = recordDay(s, new Date('2026-08-20'));
-    s = recordDay(s, new Date('2026-08-25'));
-    expect(dayStreak(s, new Date('2026-08-25'))).toBe(1);
+    s = recordDay(s, new Date('2026-08-20T12:00:00'));
+    s = recordDay(s, new Date('2026-08-25T12:00:00'));
+    expect(dayStreak(s, new Date('2026-08-25T12:00:00'))).toBe(1);
+  });
+  it('streak survives when today has not been played yet', () => {
+    let s = empty;
+    s = recordDay(s, new Date('2026-08-23T12:00:00'));
+    s = recordDay(s, new Date('2026-08-24T12:00:00'));
+    expect(dayStreak(s, new Date('2026-08-25T12:00:00'))).toBe(2);
   });
 });

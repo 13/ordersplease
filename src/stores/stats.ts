@@ -29,7 +29,10 @@ export function recordRound(s: Stats, errors: RoundError[], ms: number, failed: 
 }
 
 function dayKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function recordDay(s: Stats, date: Date): Stats {
@@ -37,8 +40,10 @@ export function recordDay(s: Stats, date: Date): Stats {
 }
 
 export function dayStreak(s: Stats, today: Date): number {
-  let streak = 0;
   const d = new Date(today);
+  // streak counts from yesterday when today has not been played yet
+  if (!s.days[dayKey(d)]) d.setDate(d.getDate() - 1);
+  let streak = 0;
   while (s.days[dayKey(d)]) {
     streak += 1;
     d.setDate(d.getDate() - 1);
