@@ -11,7 +11,7 @@
 </script>
 
 <main class="home" use:keynav>
-  <img class="logo" src="/icon.svg" alt="" width="96" height="96" />
+  <img class="logo" src="{import.meta.env.BASE_URL}icon.svg" alt="" width="96" height="96" />
   <h1>{$t('home.title')}</h1>
 
   <button class="play" onclick={() => go(`game/${level}`)}>

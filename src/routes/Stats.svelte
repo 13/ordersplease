@@ -3,6 +3,8 @@
   import { go } from '../lib/router';
   import { stats, dayStreak } from '../stores/stats';
   import type { RoundError } from '../core/round';
+  import { BADGE_IDS } from '../core/badges';
+  import { badges } from '../stores/badges';
 
   const ERROR_KEYS: RoundError[] = [
     'sum-wrong', 'change-wrong', 'shortage-missed', 'parse-wrong', 'timeout',
@@ -48,6 +50,17 @@
       <button class="train" onclick={() => go('practice')}>{$t('stats.train')}</button>
     </p>
   {/if}
+
+  <h3>{$t('stats.badges')}</h3>
+  <div class="badges">
+    {#each BADGE_IDS as id (id)}
+      {@const owned = $badges.includes(id)}
+      <div class="badge" class:locked={!owned}>
+        <span class="icon">{owned ? '🏅' : '🔒'}</span>
+        <span>{$t(`badge.${id}`)}</span>
+      </div>
+    {/each}
+  </div>
 </main>
 
 <style>
@@ -65,4 +78,12 @@
   .count { text-align: right; font-variant-numeric: tabular-nums; }
   .hint { color: var(--accent); }
   .train { background: var(--accent); color: var(--ink); margin-left: 0.5rem; min-height: 36px; }
+  .badges { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
+  .badge {
+    display: flex; align-items: center; gap: 0.4rem;
+    background: var(--wood-light); border-radius: var(--radius);
+    padding: 0.4rem 0.6rem; font-size: 0.85rem;
+  }
+  .badge.locked { opacity: 0.45; }
+  .icon { font-size: 1.1rem; }
 </style>

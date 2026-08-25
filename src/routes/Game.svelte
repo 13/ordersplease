@@ -1,12 +1,12 @@
 <!-- src/routes/Game.svelte -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
   import { settings } from '../stores/settings';
   import { activeMenu } from '../stores/menu';
   import { localizedDefaultMenu, menuForLevel } from '../core/menu';
   import { stats, recordRound, recordDay } from '../stores/stats';
-  import { progress } from '../stores/progress';
+  import { progress, improveBest } from '../stores/progress';
   import { t } from '../i18n';
   import {
     createSession, tickSession, completeRound, completeSubRound, spawnCustomer, MAX_LIVES,
@@ -18,6 +18,7 @@
     dailySeed, dailyLevelFor, DAILY_ORDERS, isRanked, nextDailyRecord, shareText,
   } from '../core/daily';
   import { daily } from '../stores/daily';
+  import { badges } from '../stores/badges';
   import {
     createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment, markHint,
     type RoundState,
@@ -29,24 +30,27 @@
     generateTab, splitOrder, orderTotal,
   } from '../core/order';
   import { maybeDispute, type Dispute } from '../core/dispute';
+  import { newBadges } from '../core/badges';
   import { renderOrder, renderAmendment, renderWave, renderPayer } from '../core/text-order';
   import { starsFor } from '../core/scoring';
   import { formatEuro } from '../core/money';
   import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
+  import { focusFirst } from '../lib/focus';
   import { chaChing, coinClink, errorBuzz, fanfare, tickTock } from '../lib/sound';
   import { PausableTimer } from '../lib/pausable';
-  import Money from '../lib/Money.svelte';
+  import { canMakeChange } from '../core/change';
+  import { markSeen } from '../stores/seen';
   import EndOverlay from '../lib/EndOverlay.svelte';
   import CoinBurst from '../lib/CoinBurst.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
   import PauseOverlay from '../lib/PauseOverlay.svelte';
-  import Numpad from '../lib/Numpad.svelte';
+  import ExplainerCard from '../lib/ExplainerCard.svelte';
   import type { NumpadApi } from '../lib/Numpad.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
   import PatienceBar from '../lib/PatienceBar.svelte';
-  import TillGrid from '../lib/TillGrid.svelte';
-  import ChangePile from '../lib/ChangePile.svelte';
+  import SumPhase from '../lib/SumPhase.svelte';
+  import ChangePhase from '../lib/ChangePhase.svelte';
 
   let { mode, level = 1, skill = 'sums' }: {
     mode: SessionMode; level?: number; skill?: Skill;
@@ -93,17 +97,32 @@
   const waveT = new PausableTimer();
   let paused = $state(false);
   let pauseMenu = $state(false);
+  let explaining = $state<string | null>(null);
   let numpadLocked = $state(false);
   let numpadApi: NumpadApi | null = null;
   let hasKeyboard = $state(false); // becomes true on first physical keydown → shows badges
+  const wideQuery = matchMedia('(min-width: 700px)');
+  let wideScreen = $state(wideQuery.matches);
+  $effect(() => {
+    const on = (e: MediaQueryListEvent) => (wideScreen = e.matches);
+    wideQuery.addEventListener('change', on);
+    return () => wideQuery.removeEventListener('change', on);
+  });
   let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
   let payerIndex = $state(0);
+  let mainEl = $state<HTMLElement | null>(null);
   let groupBaseText = $state('');
   let disputeRoll = $state(1); // pre-rolled at payment creation; 1 = never fires
   let disputeOptRoll = $state(0);
   let hintText = $state<string | null>(null);
   let hintIndex = $state(0);
   let hintDebt = 0; // 25 per Tipp press, settled against the round's gained score
+  let maxStreak = 0;
+  let trapCaught = false;
+  let disputeWon = false;
+  let tabServed = false;
+  let splitServed = false;
+  let badgeToast = $state<string | null>(null);
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -151,6 +170,7 @@
       round = createRound(tab.merged, makePayment(tab.merged.totalCents), session.till, 'tab');
       orderText = renderOrder(tab.waves[0], $settings.locale);
       numpadLocked = true;
+      maybeExplain('tab');
       let waveIdx = 1;
       const revealNext = () => {
         if (!round || round.phase !== 'sum') return;
@@ -171,6 +191,7 @@
         const sub = { lines: groups[0], totalCents: orderTotal(groups[0]) };
         round = createRound(sub, makePayment(sub.totalCents), session.till, 'split');
         groupBaseText = renderOrder(order, $settings.locale);
+        maybeExplain('split');
         orderText = `${groupBaseText} ${renderPayer(groups[0], $settings.locale)}`;
       } else {
         round = createRound(order, makePayment(order.totalCents), session.till);
@@ -198,10 +219,15 @@
 
     const vis = session.params.menuVisibleSeconds;
     menuT.clear();
-    menuHidden = vis === 0;
-    if (vis !== null && vis > 0) {
-      menuT.start(() => (menuHidden = true), vis * 1000);
+    if (get(settings).alwaysShowPrices) {
+      menuHidden = false;
+    } else {
+      menuHidden = vis === 0;
+      if (vis !== null && vis > 0) {
+        menuT.start(() => (menuHidden = true), vis * 1000);
+      }
     }
+    if (round && !explaining) maybeExplain('tipp');
   }
 
   function nextPayer() {
@@ -252,6 +278,7 @@
     } else chaChing($settings.sound);
     const frac = patienceFrac(session);
     session = completeRound(session, done, { orderText, ms });
+    maxStreak = Math.max(maxStreak, session.streak);
     if (hintDebt > 0) {
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
       session = { ...session, score: session.score - Math.min(hintDebt, gained) };
@@ -271,6 +298,9 @@
     disputeVerdict = null;
     round = null;
     pile = [];
+    if (done.success === true && done.usedTrapCall) trapCaught = true;
+    if (done.success === true && done.kind === 'tab') tabServed = true;
+    if (done.success === true && splitGroups) splitServed = true;
     splitGroups = null;
     hintText = null;
     amendT.clear();
@@ -286,6 +316,10 @@
   function onSum(cents: number) {
     if (!round) return;
     round = submitSum(round, cents);
+    if (round.phase === 'change') {
+      if (round.paymentCents < round.order.totalCents) maybeExplain('trap');
+      else if (round.changeDue > 0 && !canMakeChange(round.till, round.changeDue)) maybeExplain('shortage');
+    }
     if (round.phase === 'done') finishRound();
     else if (round.sumTries > 0 && round.phase === 'sum') errorBuzz($settings.sound);
   }
@@ -310,6 +344,7 @@
           disputeOpts = disputeOptRoll < 0.5
             ? [d.actualNote, d.claimedNote]
             : [d.claimedNote, d.actualNote];
+          maybeExplain('dispute');
           return; // finishRound happens after the dispute is answered
         }
       }
@@ -358,6 +393,7 @@
     if (correct) {
       disputeVerdict = $t('game.dispute-right');
       session = { ...session, score: session.score + 25 };
+      disputeWon = true;
     } else {
       round = { ...round, errors: [...round.errors, 'dispute-wrong'] };
       disputeVerdict = `${$t('game.dispute-wrong-msg').replace('{note}', denomLabel(d.actualNote))}`;
@@ -368,6 +404,7 @@
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
       session = { ...session, score: session.score - Math.min(50, gained) };
     }
+    tick().then(() => focusFirst(mainEl));
   }
 
   // retry keeps the same hash, so {#key $route} never remounts — reset in place
@@ -390,6 +427,13 @@
     splitGroups = null;
     paused = false;
     pauseMenu = false;
+    explaining = null;
+    maxStreak = 0;
+    trapCaught = false;
+    disputeWon = false;
+    tabServed = false;
+    splitServed = false;
+    badgeToast = null;
     startRound();
   }
 
@@ -405,8 +449,10 @@
       return next;
     });
     if (session.mode === 'level' && session.finished === 'won') {
+      const levelMs = session.roundLog.filter((e) => !e.sub).reduce((s, e) => s + e.ms, 0);
       progress.update((p) => ({
         stars: { ...p.stars, [level]: Math.max(p.stars[level] ?? 0, stars) },
+        best: improveBest(p.best, level, session.score, levelMs),
       }));
     }
     const fullRounds = session.roundLog.filter((e) => !e.sub);
@@ -419,6 +465,18 @@
       || (session.mode === 'daily'
           && fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success));
     if (bigWin) fanfare($settings.sound);
+
+    const got = newBadges({
+      mode: session.mode, finished: session.finished, stars, level,
+      maxStreak, trapCaught, disputeWon, tabServed, splitServed,
+      elapsedMs: session.elapsedMs,
+      dailyStreak: get(daily)?.streak ?? 0,
+    }, get(badges));
+    if (got.length > 0) {
+      badges.update((b) => [...b, ...got]);
+      badgeToast = got.map((id) => `🏅 ${get(t)(`badge.${id}`)}`).join('  ');
+      setTimeout(() => (badgeToast = null), 3000);
+    }
   }
 
   function doShare() {
@@ -441,13 +499,37 @@
     pauseMenu = on && menu;
     const timers = [amendT, menuT, flashT, waveT];
     for (const t of timers) on ? t.pause() : t.resume();
+    if (!on) tick().then(() => focusFirst(mainEl));
+  }
+
+  function maybeExplain(id: string) {
+    if (!markSeen(id)) return;
+    explaining = id;
+    for (const tm of [amendT, menuT, flashT, waveT]) tm.pause();
+  }
+  function dismissExplain() {
+    explaining = null;
+    for (const tm of [amendT, menuT, flashT, waveT]) tm.resume();
+    focusFirst(mainEl);
   }
 
   function onKey(e: KeyboardEvent) {
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
     const k = e.key;
+    if (explaining) {
+      if (k === 'Enter' || k === ' ' || k === 'Escape') {
+        dismissExplain();
+        e.preventDefault();
+      }
+      return;
+    }
     if (k === 'Escape') {
+      if (askOpen) {
+        askOpen = false;
+        e.preventDefault();
+        return;
+      }
       if (paused) setPaused(false);
       else setPaused(true, true);
       e.preventDefault();
@@ -460,7 +542,15 @@
       return;
     }
     if (paused) return; // overlay blocks taps; keys must freeze too
-    if (session.finished || dispute) return;
+    if (session.finished) return;
+    if (dispute) {
+      if (k === '1' || k === '2') {
+        const v = disputeOpts[Number(k) - 1];
+        if (v !== undefined) resolveDispute(v);
+        e.preventDefault();
+      }
+      return;
+    }
     hasKeyboard = true;
     if (!round) return;
     if (round.phase === 'sum' && !numpadLocked) {
@@ -470,6 +560,11 @@
       else if (k === 'Enter') { numpadApi?.press('Enter'); e.preventDefault(); }
       else if (k === 't' || k === 'T') { onTipp(); e.preventDefault(); }
     } else if (round.phase === 'change') {
+      if (askOpen && /^[1-5]$/.test(k)) {
+        onAsk(COIN_DENOMS[Number(k) - 1]);
+        e.preventDefault();
+        return;
+      }
       if (/^[0-9]$/.test(k)) {
         if (round.changeDue === 0) return; // Finish rounds: till is disabled for keys too
         if (k === '0') return; // only 9 denominations
@@ -492,6 +587,7 @@
       }
       if (dispute) return; // freeze the bar while the customer disputes
       if (paused) return;
+      if (explaining) return;
       // head walking out during a live round = that round times out (see rules above)
       if (!dispute && round && session.queue[0] && session.queue[0].patienceMs <= dt) {
         round = timeoutRound(round);
@@ -526,13 +622,14 @@
 </script>
 
 <svelte:window onkeydown={onKey} />
-<main class="game">
+<main class="game" bind:this={mainEl}>
   <header>
     <span class="lives" class:pulse={heartPulse}>{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
     <span>{mode === 'level' ? `${level} · ${$t(`level.name.${level}`)}`
       : mode === 'rush' ? `${$t('game.rush')} · ${session.level >= MAX_LEVEL ? '30+' : session.level}`
       : mode === 'practice' ? $t('practice.title')
       : $t('daily.title')}</span>
+    {#if session.streak >= 3}<span class="flame">🔥{session.streak}</span>{/if}
     <span>{$t('game.score')}: {session.score}</span>
   </header>
 
@@ -556,37 +653,23 @@
     {#key round.phase}
       <div class="phase">
         {#if round.phase === 'sum'}
-          {#if numpadLocked}
-            <p class="prompt">{$t('game.tab-wait')}</p>
-          {:else}
-            <p class="prompt">{$t('game.sum-prompt')}</p>
-            <Numpad onsubmit={onSum} {symbolFirst} bindApi={(api) => (numpadApi = api)} />
-            <button class="tipp" onclick={onTipp}>{$t('game.tipp')}</button>
-          {/if}
+          <SumPhase
+            locked={numpadLocked} {symbolFirst}
+            onsum={onSum} ontipp={onTipp}
+            bindApi={(api) => (numpadApi = api)}
+          />
         {:else if round.phase === 'change'}
-          <p class="prompt">
-            {$t('game.pays')}:
-            {#each [...round.paymentPieces].sort((a, b) => b - a) as p, i (i)}
-              <Money denom={p} interactive={false} />
-            {/each}
-          </p>
-          <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} showKeys={hasKeyboard} />
-          <ChangePile {pile} showTotal={session.params.showPileTotal} onreturn={ret} />
-          {#if askOpen}
-            <div class="ask-row">
-              {#each COIN_DENOMS as d (d)}
-                <button onclick={() => onAsk(d)}>{$t('game.ask-for')} {denomLabel(d)}?</button>
-              {/each}
-            </div>
-          {/if}
-          <div class="actions">
-            <button class="confirm" onclick={confirmChange}>
-              {round.changeDue === 0 ? $t('game.finish') : $t('game.confirm')}
-            </button>
-            <button class="ask" onclick={() => (askOpen = !askOpen)}>{$t('game.ask')}</button>
-            <button class="ask" onclick={onNotEnough}>{$t('game.not-enough')}</button>
-            <button class="tipp" onclick={onTipp}>{$t('game.tipp')}</button>
-          </div>
+          <ChangePhase
+            paymentPieces={round.paymentPieces}
+            {tillView} {pile}
+            showPileTotal={session.params.showPileTotal}
+            showKeys={hasKeyboard || wideScreen}
+            finishMode={round.changeDue === 0}
+            {askOpen}
+            ontake={take} onreturn={ret} onconfirm={confirmChange}
+            ontoggleask={() => (askOpen = !askOpen)}
+            onask={onAsk} onnotenough={onNotEnough} ontipp={onTipp}
+          />
         {/if}
       </div>
     {/key}
@@ -607,6 +690,16 @@
     />
   {/if}
 
+  {#if badgeToast}<div class="flash badge-toast">{badgeToast}</div>{/if}
+
+  {#if explaining}
+    <ExplainerCard
+      title={$t(`explain.${explaining}.title`)}
+      body={$t(`explain.${explaining}.body`)}
+      ondismiss={dismissExplain}
+    />
+  {/if}
+
   {#if paused}
     <PauseOverlay
       menu={pauseMenu}
@@ -618,7 +711,7 @@
     />
   {/if}
 
-  {#if dispute && !paused}
+  {#if dispute && !paused && !explaining}
     <DisputeDialog
       claimText={$t('game.dispute-claim').replace('{note}', denomLabel(dispute.claimedNote))}
       question={$t('game.dispute-question')}
@@ -636,6 +729,7 @@
   header { display: flex; justify-content: space-between; align-items: center; }
   .lives { color: var(--danger); }
   .lives.pulse { animation: op-pulse 0.5s ease-in-out; }
+  .flame { color: var(--accent); font-weight: bold; animation: op-pop 0.3s ease-out; }
   .queue { display: flex; gap: 0.75rem; min-height: 40px; }
   .customer { width: 64px; opacity: 0.5; }
   .customer.active { opacity: 1; }
@@ -643,24 +737,13 @@
   .order { font-size: 1.15rem; font-style: italic; }
   .flash { animation: op-slide-up 0.2s ease-out; }
   .amend { color: var(--accent); animation: op-slide-up 0.3s ease-out; }
-  .tipp { background: var(--wood-light); color: var(--cream); }
   .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
-  .prompt { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: baseline; }
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
-  .actions {
-    display: flex; gap: 0.5rem;
-    position: sticky; bottom: 0;
-    padding: var(--space-2) 0 calc(var(--space-2) + env(safe-area-inset-bottom));
-    background: var(--wood);
-  }
-  .confirm { flex: 1; background: var(--ok); color: var(--cream); font-size: 1.1rem; }
-  .ask { background: var(--accent); color: var(--ink); }
-  .ask-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .ask-row button { background: var(--wood-light); color: var(--cream); }
   .flash {
     position: fixed; inset: auto 0 30% 0; margin: 0 auto; width: fit-content;
     background: var(--cream); color: var(--ink);
     padding: 0.75rem 1.5rem; border-radius: var(--radius);
     font-size: 1.3rem; font-weight: bold;
   }
+  .badge-toast { bottom: 12%; background: var(--accent); }
 </style>

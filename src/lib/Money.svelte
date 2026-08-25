@@ -52,9 +52,12 @@
     border-radius: 999px; font-size: 0.7rem; padding: 1px 6px;
   }
   .keybadge {
-    position: absolute; bottom: -6px; left: -6px;
+    position: absolute; bottom: -7px; left: -7px;
+    min-width: 16px; height: 16px; line-height: 14px;
     background: var(--cream); color: var(--ink);
-    border-radius: 4px; font-size: 0.65rem; padding: 0 4px;
-    font-family: inherit;
+    border: 1px solid var(--ink); border-bottom-width: 2px;
+    border-radius: 4px; font-size: 0.65rem; text-align: center;
+    font-family: ui-monospace, 'Cascadia Mono', monospace; padding: 0 3px;
+    box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.2);
   }
 </style>

@@ -5,6 +5,7 @@
   import { go } from './router';
   import { MAX_LEVEL } from '../core/difficulty';
   import RoundDetails from './RoundDetails.svelte';
+  import { focusFirst } from './focus';
 
   let {
     session, level, stars, wasNewHigh, onretry, onshare = null, shareLabel = '', note = null,
@@ -34,7 +35,7 @@
 
   let displayScore = $state(0);
   $effect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       displayScore = session.score;
       return;
     }
@@ -49,9 +50,14 @@
     }, 30);
     return () => clearInterval(iv);
   });
+
+  let actionsEl = $state<HTMLElement | null>(null);
+  $effect(() => {
+    focusFirst(actionsEl);
+  });
 </script>
 
-<div class="overlay">
+<div class="overlay" role="dialog" aria-label={$t(session.finished === 'won' ? 'result.won' : 'result.lost')}>
   {#if celebrate && !reduced}
     <div class="shower" aria-hidden="true">
       {#each rain as r (r.id)}
@@ -81,7 +87,7 @@
 
   <RoundDetails log={session.roundLog} />
 
-  <div class="overlay-actions">
+  <div class="overlay-actions" bind:this={actionsEl}>
     {#if onshare}
       <button onclick={onshare}>{shareLabel}</button>
     {/if}
