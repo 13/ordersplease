@@ -407,6 +407,7 @@
       e.preventDefault();
       return;
     }
+    if (paused) return; // overlay blocks taps; keys must freeze too
     if (session.finished || dispute) return;
     hasKeyboard = true;
     if (!round) return;
