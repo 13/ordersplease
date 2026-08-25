@@ -6,10 +6,17 @@
   import Stats from './routes/Stats.svelte';
   import MenuEditor from './routes/MenuEditor.svelte';
   import Settings from './routes/Settings.svelte';
+  import Practice from './routes/Practice.svelte';
+  import { SKILL_ERROR, type Skill } from './core/difficulty';
 
   const gameLevel = $derived.by(() => {
     const m = $route.match(/^game\/(\d+)$/);
     return m ? Number(m[1]) : null;
+  });
+
+  const practiceSkill = $derived.by(() => {
+    const m = $route.match(/^practice\/([a-z]+)$/);
+    return m && m[1] in SKILL_ERROR ? (m[1] as Skill) : null;
   });
 </script>
 
@@ -26,6 +33,10 @@
     <MenuEditor />
   {:else if $route === 'settings'}
     <Settings />
+  {:else if practiceSkill !== null}
+    <Game mode="practice" skill={practiceSkill} />
+  {:else if $route === 'practice'}
+    <Practice />
   {:else}
     <Home />
   {/if}

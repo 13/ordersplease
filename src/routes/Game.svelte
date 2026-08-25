@@ -10,6 +10,8 @@
   import {
     createSession, tickSession, completeRound, completeSubRound, spawnCustomer, MAX_LIVES,
   } from '../core/session';
+  import type { SessionMode } from '../core/session';
+  import { practiceParams, type Skill } from '../core/difficulty';
   import {
     createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment,
     type RoundState,
@@ -33,11 +35,18 @@
   import TillGrid from '../lib/TillGrid.svelte';
   import ChangePile from '../lib/ChangePile.svelte';
 
-  let { mode, level = 1 }: { mode: 'level' | 'rush'; level?: number } = $props();
+  let { mode, level = 1, skill = 'sums' }: {
+    mode: SessionMode; level?: number; skill?: Skill;
+  } = $props();
 
-  let session = $state(createSession(
-    mode, level, get(activeMenu), get(settings).useCustomMenu, Date.now() % 2 ** 31,
-  ));
+  function newSession() {
+    const override = mode === 'practice' ? practiceParams(skill) : undefined;
+    return createSession(
+      mode, level, get(activeMenu), get(settings).useCustomMenu,
+      Date.now() % 2 ** 31, override,
+    );
+  }
+  let session = $state(newSession());
   let round = $state<RoundState | null>(null);
   let orderText = $state('');
   let amendText = $state<string | null>(null);
@@ -291,9 +300,7 @@
     clearTimeout(waveTimer);
     clearTimeout(menuTimer);
     clearTimeout(flashTimer);
-    session = createSession(
-      mode, level, get(activeMenu), get(settings).useCustomMenu, Date.now() % 2 ** 31,
-    );
+    session = newSession();
     round = null;
     flash = null;
     dispute = null;
@@ -362,7 +369,10 @@
 <main class="game">
   <header>
     <span class="lives">{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
-    <span>{mode === 'level' ? `${$t('game.level')} ${level}` : `${$t('game.rush')} · ${session.level}`}</span>
+    <span>{mode === 'level' ? `${$t('game.level')} ${level}`
+      : mode === 'rush' ? `${$t('game.rush')} · ${session.level}`
+      : mode === 'practice' ? $t('practice.title')
+      : $t('daily.title')}</span>
     <span>{$t('game.score')}: {session.score}</span>
   </header>
 
