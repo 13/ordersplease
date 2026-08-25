@@ -6,6 +6,7 @@
 
   const ERROR_KEYS: RoundError[] = [
     'sum-wrong', 'change-wrong', 'shortage-missed', 'parse-wrong', 'timeout',
+    'trap-missed', 'dispute-wrong', 'tab-wrong', 'split-wrong',
   ];
 
   const avgSeconds = $derived(
@@ -13,11 +14,11 @@
   );
   const streak = $derived(dayStreak($stats, new Date()));
   const worst = $derived.by(() => {
-    const entries = ERROR_KEYS.map((k) => [k, $stats.errors[k]] as const);
+    const entries = ERROR_KEYS.map((k) => [k, $stats.errors[k] ?? 0] as const);
     const max = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
     return max[1] > 0 ? max[0] : null;
   });
-  const maxCount = $derived(Math.max(1, ...ERROR_KEYS.map((k) => $stats.errors[k])));
+  const maxCount = $derived(Math.max(1, ...ERROR_KEYS.map((k) => $stats.errors[k] ?? 0)));
 </script>
 
 <main class="stats">
@@ -35,14 +36,17 @@
     {#each ERROR_KEYS as k (k)}
       <li>
         <span>{$t(`stats.err.${k}`)}</span>
-        <div class="bar"><div style="width: {($stats.errors[k] / maxCount) * 100}%"></div></div>
-        <span class="count">{$stats.errors[k]}</span>
+        <div class="bar"><div style="width: {(($stats.errors[k] ?? 0) / maxCount) * 100}%"></div></div>
+        <span class="count">{$stats.errors[k] ?? 0}</span>
       </li>
     {/each}
   </ul>
 
   {#if worst}
-    <p class="hint">{$t('stats.hint')}: <strong>{$t(`stats.err.${worst}`)}</strong></p>
+    <p class="hint">
+      {$t('stats.hint')}: <strong>{$t(`stats.err.${worst}`)}</strong>
+      <button class="train" onclick={() => go('practice')}>{$t('stats.train')}</button>
+    </p>
   {/if}
 </main>
 
@@ -60,4 +64,5 @@
   .bar div { height: 100%; background: var(--danger); }
   .count { text-align: right; font-variant-numeric: tabular-nums; }
   .hint { color: var(--accent); }
+  .train { background: var(--accent); color: var(--ink); margin-left: 0.5rem; min-height: 36px; }
 </style>

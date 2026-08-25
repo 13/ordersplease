@@ -10,8 +10,11 @@ export interface Stats {
   rushHigh: number;
 }
 
-const EMPTY: Stats = {
-  errors: { 'sum-wrong': 0, 'change-wrong': 0, 'shortage-missed': 0, 'parse-wrong': 0, timeout: 0 },
+export const EMPTY: Stats = {
+  errors: {
+    'sum-wrong': 0, 'change-wrong': 0, 'shortage-missed': 0, 'parse-wrong': 0, timeout: 0,
+    'trap-missed': 0, 'dispute-wrong': 0, 'tab-wrong': 0, 'split-wrong': 0,
+  },
   rounds: 0, roundsFailed: 0, totalMs: 0, days: {}, rushHigh: 0,
 };
 
@@ -19,7 +22,7 @@ export const stats = persisted<Stats>('op.stats', EMPTY);
 
 export function recordRound(s: Stats, errors: RoundError[], ms: number, failed: boolean): Stats {
   const e = { ...s.errors };
-  for (const err of errors) e[err] += 1;
+  for (const err of errors) e[err] = (e[err] ?? 0) + 1;
   return {
     ...s, errors: e,
     rounds: s.rounds + 1,

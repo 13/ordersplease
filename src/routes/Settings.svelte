@@ -3,17 +3,14 @@
   import { go } from '../lib/router';
   import { settings } from '../stores/settings';
   import { progress } from '../stores/progress';
-  import { stats } from '../stores/stats';
+  import { stats, EMPTY } from '../stores/stats';
   import { customMenu } from '../stores/menu';
   import { DEFAULT_MENU } from '../core/menu';
 
   function resetAll() {
     if (!confirm($t('settings.reset-confirm'))) return;
     progress.set({ stars: {} });
-    stats.set({
-      errors: { 'sum-wrong': 0, 'change-wrong': 0, 'shortage-missed': 0, 'parse-wrong': 0, timeout: 0 },
-      rounds: 0, roundsFailed: 0, totalMs: 0, days: {}, rushHigh: 0,
-    });
+    stats.set(structuredClone(EMPTY));
     customMenu.set(DEFAULT_MENU.map((m) => ({ ...m })));
   }
 </script>
