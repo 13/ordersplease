@@ -4,6 +4,7 @@
   import { go } from '../lib/router';
   import { stats } from '../stores/stats';
   import { SKILL_ERROR, type Skill } from '../core/difficulty';
+  import { keynav } from '../lib/keynav';
 
   const SKILLS = Object.keys(SKILL_ERROR) as Skill[];
   const worst = $derived.by(() => {
@@ -22,7 +23,7 @@
     <button class="back" aria-label={$t('nav.back')} onclick={() => go('home')}>←</button>
     {$t('practice.title')}
   </h2>
-  <div class="grid">
+  <div class="grid" use:keynav style="--keynav-cols: 2">
     {#each SKILLS as s (s)}
       <button class="tile" class:worst={s === worst} onclick={() => go(`practice/${s}`)}>
         <span>{$t(`stats.err.${SKILL_ERROR[s]}`)}</span>

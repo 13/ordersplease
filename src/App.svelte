@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { route } from './lib/router';
+  import { route, go } from './lib/router';
   import Home from './routes/Home.svelte';
   import Levels from './routes/Levels.svelte';
   import Game from './routes/Game.svelte';
@@ -21,10 +21,23 @@
     return m && m[1] in SKILL_ERROR ? (m[1] as Skill) : null;
   });
 
+  const onGameRoute = $derived(
+    gameLevel !== null || $route === 'rush' || $route === 'daily' || practiceSkill !== null,
+  );
+
+  function onEsc(e: KeyboardEvent) {
+    if (e.key !== 'Escape' || onGameRoute) return;
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
+    if ($route !== 'home') go('home');
+  }
+
   $effect(() => {
     document.documentElement.lang = $settings.locale;
   });
 </script>
+
+<svelte:window onkeydown={onEsc} />
 
 {#key $route}
   {#if gameLevel !== null && gameLevel <= unlockedLevel($progress)}

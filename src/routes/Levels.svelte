@@ -3,6 +3,7 @@
   import { go } from '../lib/router';
   import { progress, unlockedLevel } from '../stores/progress';
   import { MAX_LEVEL } from '../core/difficulty';
+  import { keynav } from '../lib/keynav';
 
   const unlocked = $derived(unlockedLevel($progress));
   const levels = Array.from({ length: MAX_LEVEL }, (_, i) => i + 1);
@@ -10,7 +11,7 @@
 
 <main class="levels">
   <h2><button class="back" onclick={() => go('home')} aria-label={$t('nav.back')}>←</button> {$t('levels.title')}</h2>
-  <div class="grid">
+  <div class="grid" use:keynav style="--keynav-cols: 5">
     {#each levels as l (l)}
       <button class="level" disabled={l > unlocked} onclick={() => go(`game/${l}`)}>
         <span class="num">{l}</span>

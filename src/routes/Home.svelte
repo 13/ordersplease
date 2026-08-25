@@ -3,11 +3,12 @@
   import { go } from '../lib/router';
   import { daily } from '../stores/daily';
   import { dailyKey } from '../core/daily';
+  import { keynav } from '../lib/keynav';
 
   const doneToday = $derived($daily?.date === dailyKey(new Date()));
 </script>
 
-<main class="home">
+<main class="home" use:keynav>
   <h1>{$t('home.title')}</h1>
   <button onclick={() => go('levels')}>{$t('home.play')}</button>
   <button onclick={() => go('rush')}>{$t('home.rush')}</button>
