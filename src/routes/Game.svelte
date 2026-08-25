@@ -451,8 +451,8 @@
     } else if (round.phase === 'change') {
       if (/^[0-9]$/.test(k)) {
         if (round.changeDue === 0) return; // Finish rounds: till is disabled for keys too
-        const idx = k === '0' ? 9 : Number(k) - 1;
-        take(DENOMS[idx]);
+        if (k === '0') return; // only 9 denominations
+        take(DENOMS[Number(k) - 1]);
         e.preventDefault();
       } else if (k === 'Enter') { confirmChange(); e.preventDefault(); }
       else if (k === 'a' || k === 'A') { askOpen = !askOpen; e.preventDefault(); }

@@ -11,7 +11,7 @@
   {#each DENOMS as d, i (d)}
     <Money denom={d} count={till[d] ?? 0}
       disabled={disabled || (till[d] ?? 0) === 0}
-      keyBadge={showKeys ? String((i + 1) % 10) : null}
+      keyBadge={showKeys ? String(i + 1) : null}
       onclick={() => ontake(d)} />
   {/each}
 </div>
