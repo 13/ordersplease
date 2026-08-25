@@ -6,7 +6,7 @@
   import { activeMenu } from '../stores/menu';
   import { localizedDefaultMenu, menuForLevel } from '../core/menu';
   import { stats, recordRound, recordDay } from '../stores/stats';
-  import { progress } from '../stores/progress';
+  import { progress, improveBest } from '../stores/progress';
   import { t } from '../i18n';
   import {
     createSession, tickSession, completeRound, completeSubRound, spawnCustomer, MAX_LIVES,
@@ -428,8 +428,10 @@
       return next;
     });
     if (session.mode === 'level' && session.finished === 'won') {
+      const levelMs = session.roundLog.filter((e) => !e.sub).reduce((s, e) => s + e.ms, 0);
       progress.update((p) => ({
         stars: { ...p.stars, [level]: Math.max(p.stars[level] ?? 0, stars) },
+        best: improveBest(p.best, level, session.score, levelMs),
       }));
     }
     const fullRounds = session.roundLog.filter((e) => !e.sub);

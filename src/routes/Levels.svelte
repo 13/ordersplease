@@ -17,6 +17,9 @@
         <span class="num">{l}</span>
         <span class="stars">{'★'.repeat($progress.stars[l] ?? 0)}</span>
         <span class="lname">{$t(`level.name.${l}`)}</span>
+        {#if $progress.best?.[l]}
+          <span class="best">{$progress.best[l].score}</span>
+        {/if}
       </button>
     {/each}
   </div>
@@ -40,4 +43,5 @@
     font-size: 0.55rem; opacity: 0.75; line-height: 1.1; text-align: center;
     overflow-wrap: anywhere; hyphens: auto;
   }
+  .best { font-size: 0.6rem; color: var(--accent); font-variant-numeric: tabular-nums; }
 </style>
