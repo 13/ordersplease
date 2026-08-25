@@ -31,9 +31,13 @@
     aspect-ratio: 1; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     background: var(--wood-light); color: var(--cream);
+    overflow: hidden; padding: 0 2px;
   }
   .level:disabled { opacity: 0.35; }
   .num { font-size: 1.2rem; font-weight: bold; }
   .stars { color: var(--accent); font-size: 0.8rem; min-height: 1em; }
-  .lname { font-size: 0.55rem; opacity: 0.75; line-height: 1.1; text-align: center; }
+  .lname {
+    font-size: 0.55rem; opacity: 0.75; line-height: 1.1; text-align: center;
+    overflow-wrap: anywhere; hyphens: auto;
+  }
 </style>

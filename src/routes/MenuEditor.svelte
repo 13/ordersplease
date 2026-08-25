@@ -51,7 +51,11 @@
       <li>
         <span>{item.name}</span>
         <span class="price">{formatEuro(item.priceCents, $settings.symbolFirst)}</span>
-        <button class="cat" onclick={() => toggleCategory(item.id)}>
+        <button
+          class="cat"
+          onclick={() => toggleCategory(item.id)}
+          aria-label={item.category === 'food' ? $t('menu.cat-food') : $t('menu.cat-drink')}
+        >
           {item.category === 'food' ? '🍽' : '🍺'}
         </button>
         <button class="del" onclick={() => remove(item.id)}>✕</button>
@@ -62,7 +66,11 @@
   <div class="add">
     <input placeholder={$t('menu.name')} bind:value={newName} />
     <input placeholder="4,50" inputmode="decimal" bind:value={newPrice} />
-    <button class="cat" onclick={() => (newCategory = newCategory === 'food' ? 'drink' : 'food')}>
+    <button
+      class="cat"
+      onclick={() => (newCategory = newCategory === 'food' ? 'drink' : 'food')}
+      aria-label={newCategory === 'food' ? $t('menu.cat-food') : $t('menu.cat-drink')}
+    >
       {newCategory === 'food' ? '🍽' : '🍺'}
     </button>
     <button onclick={add}>{$t('menu.add')}</button>
@@ -84,7 +92,7 @@
   li span:first-child { flex: 1; }
   .price { font-variant-numeric: tabular-nums; }
   .del { background: var(--danger); color: var(--cream); min-width: 40px; min-height: 40px; }
-  .cat { background: var(--wood-light); min-width: 44px; }
+  .cat { background: var(--wood-light); min-width: 44px; min-height: 40px; }
   .add { display: flex; gap: 0.4rem; }
   .add input {
     flex: 1; min-width: 0; padding: 0.6rem; border-radius: var(--radius);

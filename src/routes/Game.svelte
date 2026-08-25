@@ -409,15 +409,15 @@
         stars: { ...p.stars, [level]: Math.max(p.stars[level] ?? 0, stars) },
       }));
     }
+    const fullRounds = session.roundLog.filter((e) => !e.sub);
     if (session.mode === 'daily') {
-      const fullRounds = session.roundLog.filter((e) => !e.sub);
       const perfect = fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success);
       daily.update((prev) => nextDailyRecord(prev, new Date(), session.score, perfect));
     }
     bigWin = (session.mode === 'level' && session.finished === 'won' && stars === 3)
       || (session.mode === 'rush' && wasNewHigh)
-      || (session.mode === 'daily' && session.roundLog.filter((e) => !e.sub).every((e) => e.success)
-          && session.roundLog.filter((e) => !e.sub).length >= DAILY_ORDERS);
+      || (session.mode === 'daily'
+          && fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success));
     if (bigWin) fanfare($settings.sound);
   }
 

@@ -9,7 +9,10 @@
   let parts = $state<Particle[]>([]);
 
   $effect(() => {
-    if (burstKey === 0 || reduced) return;
+    if (burstKey === 0 || reduced) {
+      parts = [];
+      return;
+    }
     const n = 8 + Math.floor(Math.random() * 5);
     parts = Array.from({ length: n }, (_, i) => ({
       id: burstKey * 100 + i,
