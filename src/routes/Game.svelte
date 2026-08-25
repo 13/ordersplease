@@ -514,7 +514,7 @@
 <main class="game">
   <header>
     <span class="lives" class:pulse={heartPulse}>{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
-    <span>{mode === 'level' ? `${$t('game.level')} ${level}`
+    <span>{mode === 'level' ? `${level} · ${$t(`level.name.${level}`)}`
       : mode === 'rush' ? `${$t('game.rush')} · ${session.level >= MAX_LEVEL ? '30+' : session.level}`
       : mode === 'practice' ? $t('practice.title')
       : $t('daily.title')}</span>
@@ -585,6 +585,7 @@
       onshare={mode === 'daily' ? doShare : null}
       shareLabel={shareCopied ? $t('daily.copied') : $t('daily.share')}
       note={mode === 'daily' && !rankedRun ? $t('daily.unranked') : null}
+      levelName={mode === 'level' ? $t(`level.name.${level}`) : null}
     />
   {/if}
 

@@ -16,6 +16,7 @@
       <button class="level" disabled={l > unlocked} onclick={() => go(`game/${l}`)}>
         <span class="num">{l}</span>
         <span class="stars">{'★'.repeat($progress.stars[l] ?? 0)}</span>
+        <span class="lname">{$t(`level.name.${l}`)}</span>
       </button>
     {/each}
   </div>
@@ -34,4 +35,5 @@
   .level:disabled { opacity: 0.35; }
   .num { font-size: 1.2rem; font-weight: bold; }
   .stars { color: var(--accent); font-size: 0.8rem; min-height: 1em; }
+  .lname { font-size: 0.55rem; opacity: 0.75; line-height: 1.1; text-align: center; }
 </style>

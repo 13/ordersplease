@@ -7,7 +7,7 @@
   import RoundDetails from './RoundDetails.svelte';
 
   let {
-    session, level, stars, wasNewHigh, onretry, onshare = null, shareLabel = '', note = null,
+    session, level, stars, wasNewHigh, onretry, onshare = null, shareLabel = '', note = null, levelName = null,
   }: {
     session: SessionState;
     level: number;
@@ -17,6 +17,7 @@
     onshare?: (() => void) | null;
     shareLabel?: string;
     note?: string | null;
+    levelName?: string | null;
   } = $props();
 
   const fullRounds = $derived(session.roundLog.filter((e) => !e.sub));
@@ -44,6 +45,7 @@
 
 <div class="overlay">
   <h2>{session.finished === 'won' ? $t('result.won') : $t('result.lost')}</h2>
+  {#if levelName && session.finished === 'won'}<p class="lvlname">{levelName}</p>{/if}
   {#if session.mode === 'level' && session.finished === 'won'}
     <p class="stars">
       {#each [0, 1, 2] as i (i)}
@@ -86,6 +88,7 @@
   .star { display: inline-block; animation: op-pop 0.3s ease-out both; }
   .star.earned { color: var(--accent); }
   .note { color: var(--accent); font-size: 0.9rem; }
+  .lvlname { opacity: 0.8; font-style: italic; }
   .overlay-actions { display: flex; flex-direction: column; gap: 0.5rem; width: 240px; }
   .overlay-actions button { background: var(--accent); color: var(--ink); font-size: 1.1rem; }
 </style>
