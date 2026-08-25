@@ -9,7 +9,7 @@
 </script>
 
 <main class="levels">
-  <h2><button class="back" onclick={() => go('home')}>←</button> {$t('levels.title')}</h2>
+  <h2><button class="back" onclick={() => go('home')} aria-label={$t('nav.back')}>←</button> {$t('levels.title')}</h2>
   <div class="grid">
     {#each levels as l (l)}
       <button class="level" disabled={l > unlocked} onclick={() => go(`game/${l}`)}>

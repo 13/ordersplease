@@ -103,9 +103,11 @@
     const ms = performance.now() - roundStartedAt;
     const failed = done.success !== true;
     stats.update((s) => recordRound(s, done.errors, ms, failed));
-    flash = failed
-      ? `${$t('game.wrong')} ${formatEuro(done.order.totalCents, symbolFirst)}`
-      : $t('game.correct');
+    flash = !failed
+      ? $t('game.correct')
+      : done.errors.includes('change-wrong')
+        ? `${$t('game.change-was')} ${formatEuro(done.changeDue, symbolFirst)}`
+        : `${$t('game.wrong')} ${formatEuro(done.order.totalCents, symbolFirst)}`;
     beep(!failed, $settings.sound);
     session = completeRound(session, done);
     round = null;

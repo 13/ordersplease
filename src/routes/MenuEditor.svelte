@@ -32,7 +32,7 @@
 </script>
 
 <main class="editor">
-  <h2><button class="back" onclick={() => go('home')}>←</button> {$t('menu.title')}</h2>
+  <h2><button class="back" onclick={() => go('home')} aria-label={$t('nav.back')}>←</button> {$t('menu.title')}</h2>
 
   <label class="toggle">
     <input type="checkbox" bind:checked={$settings.useCustomMenu} />

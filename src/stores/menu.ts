@@ -9,5 +9,5 @@ export const customMenu = persisted<MenuItem[]>(
 );
 
 export const activeMenu = derived([settings, customMenu], ([$s, $c]) =>
-  $s.useCustomMenu ? $c : DEFAULT_MENU,
+  $s.useCustomMenu && $c.length > 0 ? $c : DEFAULT_MENU,
 );

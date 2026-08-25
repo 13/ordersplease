@@ -1,4 +1,5 @@
 export default {
+  'nav.back': 'Back',
   'home.title': 'Orders, Please',
   'home.play': 'Play',
   'home.rush': 'Rush night',

@@ -19,7 +19,7 @@
 </script>
 
 <main class="settings">
-  <h2><button class="back" onclick={() => go('home')}>←</button> {$t('settings.title')}</h2>
+  <h2><button class="back" onclick={() => go('home')} aria-label={$t('nav.back')}>←</button> {$t('settings.title')}</h2>
 
   <label>
     {$t('settings.language')}

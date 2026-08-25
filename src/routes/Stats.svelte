@@ -21,7 +21,7 @@
 </script>
 
 <main class="stats">
-  <h2><button class="back" onclick={() => go('home')}>←</button> {$t('stats.title')}</h2>
+  <h2><button class="back" onclick={() => go('home')} aria-label={$t('nav.back')}>←</button> {$t('stats.title')}</h2>
 
   <dl>
     <div><dt>{$t('stats.rounds')}</dt><dd>{$stats.rounds}</dd></div>
