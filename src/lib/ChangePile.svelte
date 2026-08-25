@@ -9,7 +9,7 @@
 </script>
 
 <div class="pile" class:empty={pile.length === 0}>
-  {#each pile as d, i}
+  {#each pile as d, i (i)}
     <Money denom={d} onclick={() => onreturn(i)} />
   {/each}
   {#if showTotal && pile.length > 0}

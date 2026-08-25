@@ -4,11 +4,17 @@
 
   let { denom, disabled = false, count = null, onclick }:
     { denom: Denom; disabled?: boolean; count?: number | null; onclick?: () => void } = $props();
+
+  const label = $derived(
+    count === null ? denomLabel(denom) : `${denomLabel(denom)} (${count})`,
+  );
 </script>
 
 <button
+  type="button"
   class:note={isNote(denom)} class:coin={!isNote(denom)}
   style="--money-color: {denomColor(denom)}"
+  aria-label={label}
   {disabled} onclick={onclick}
 >
   {denomLabel(denom)}
@@ -23,7 +29,7 @@
   }
   button:disabled { opacity: 0.3; }
   .coin { width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgb(0 0 0 / 0.25); }
-  .note { width: 72px; height: 44px; border-radius: 6px; border: 2px solid rgb(0 0 0 / 0.25); }
+  .note { width: 72px; height: 48px; border-radius: 6px; border: 2px solid rgb(0 0 0 / 0.25); }
   .badge {
     position: absolute; top: -6px; right: -6px;
     background: var(--ink); color: var(--cream);
