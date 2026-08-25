@@ -9,8 +9,8 @@ describe('menu', () => {
     expect(byId['water']).toBe(250);
     expect(DEFAULT_MENU.length).toBeGreaterThanOrEqual(6);
   });
-  it('all default prices are multiples of 5 cents', () => {
-    for (const m of DEFAULT_MENU) expect(m.priceCents % 5).toBe(0);
+  it('all default prices are multiples of 10 cents', () => {
+    for (const m of DEFAULT_MENU) expect(m.priceCents % 10).toBe(0);
   });
   it('validates name and price', () => {
     expect(validateItem('Beer', 400)).toBeNull();
