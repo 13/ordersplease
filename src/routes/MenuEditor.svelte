@@ -8,6 +8,7 @@
 
   let newName = $state('');
   let newPrice = $state('');
+  let newCategory = $state<'drink' | 'food'>('drink');
   let error = $state<string | null>(null);
 
   function add() {
@@ -19,7 +20,7 @@
     }
     customMenu.update((m) => [
       ...m,
-      { id: `custom-${Date.now()}`, name: newName.trim(), priceCents: cents! },
+      { id: `custom-${Date.now()}`, name: newName.trim(), priceCents: cents!, category: newCategory },
     ]);
     newName = '';
     newPrice = '';
@@ -28,6 +29,12 @@
 
   function remove(id: string) {
     customMenu.update((m) => m.filter((x) => x.id !== id));
+  }
+
+  function toggleCategory(id: string) {
+    customMenu.update((m) => m.map((x) =>
+      x.id === id ? { ...x, category: x.category === 'food' ? 'drink' : 'food' } : x,
+    ));
   }
 </script>
 
@@ -44,6 +51,9 @@
       <li>
         <span>{item.name}</span>
         <span class="price">{formatEuro(item.priceCents, $settings.symbolFirst)}</span>
+        <button class="cat" onclick={() => toggleCategory(item.id)}>
+          {item.category === 'food' ? '🍽' : '🍺'}
+        </button>
         <button class="del" onclick={() => remove(item.id)}>✕</button>
       </li>
     {/each}
@@ -52,6 +62,9 @@
   <div class="add">
     <input placeholder={$t('menu.name')} bind:value={newName} />
     <input placeholder="4,50" inputmode="decimal" bind:value={newPrice} />
+    <button class="cat" onclick={() => (newCategory = newCategory === 'food' ? 'drink' : 'food')}>
+      {newCategory === 'food' ? '🍽' : '🍺'}
+    </button>
     <button onclick={add}>{$t('menu.add')}</button>
   </div>
   {#if error}<p class="error">{$t(error)}</p>{/if}
@@ -71,6 +84,7 @@
   li span:first-child { flex: 1; }
   .price { font-variant-numeric: tabular-nums; }
   .del { background: var(--danger); color: var(--cream); min-width: 40px; min-height: 40px; }
+  .cat { background: var(--wood-light); min-width: 44px; }
   .add { display: flex; gap: 0.4rem; }
   .add input {
     flex: 1; min-width: 0; padding: 0.6rem; border-radius: var(--radius);

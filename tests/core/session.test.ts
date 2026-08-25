@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   createSession, tickSession, completeRound, spawnCustomer, patienceFrac, MAX_LIVES,
+  effectiveLevel,
 } from '$core/session';
 import { DEFAULT_MENU } from '$core/menu';
 import { createRound, submitSum, submitChange, timeoutRound } from '$core/round';
@@ -185,6 +186,19 @@ describe('rush fast-spawn', () => {
     s = completeRound(s, winRound(s), { orderText: 'x', ms: 1000 });
     expect(s.queue.length).toBe(1);
     expect(s.spawnCooldownMs).toBe(before);
+  });
+});
+
+describe('effectiveLevel', () => {
+  it('daily follows the ramp; others report session.level', () => {
+    const lvl = createSession('level', 7, DEFAULT_MENU, false, 1);
+    expect(effectiveLevel(lvl)).toBe(7);
+    const override = { ...paramsForLevel(dailyLevelFor(0)), ordersPerLevel: 10 };
+    let d = createSession('daily', 1, DEFAULT_MENU, false, 20260825, override);
+    expect(effectiveLevel(d)).toBe(dailyLevelFor(0));
+    if (d.queue.length === 0) d = spawnCustomer(d);
+    d = completeRound(d, winRound(d), { orderText: 'x', ms: 500 });
+    expect(effectiveLevel(d)).toBe(dailyLevelFor(1));
   });
 });
 

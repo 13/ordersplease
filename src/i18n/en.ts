@@ -83,6 +83,7 @@ export default {
   'menu.use-custom': 'Play with my menu',
   'menu.add': 'Add drink',
   'menu.name': 'Name',
+  'menu.food-header': 'Food',
   'error.name-empty': 'Name must not be empty',
   'error.price-invalid': 'Price must be a positive multiple of 10 cents',
   'settings.title': 'Settings',

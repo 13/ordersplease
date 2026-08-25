@@ -4,12 +4,13 @@
   import { get } from 'svelte/store';
   import { settings } from '../stores/settings';
   import { activeMenu } from '../stores/menu';
-  import { localizedDefaultMenu } from '../core/menu';
+  import { localizedDefaultMenu, menuForLevel } from '../core/menu';
   import { stats, recordRound, recordDay } from '../stores/stats';
   import { progress } from '../stores/progress';
   import { t } from '../i18n';
   import {
     createSession, tickSession, completeRound, completeSubRound, spawnCustomer, MAX_LIVES,
+    effectiveLevel,
   } from '../core/session';
   import type { SessionMode } from '../core/session';
   import { practiceParams, paramsForLevel, type Skill, MAX_LEVEL } from '../core/difficulty';
@@ -111,6 +112,11 @@
   const stars = $derived(
     session.finished === 'won' ? starsFor(session.score, session.params.ordersPerLevel) : 0,
   );
+  const visibleMenu = $derived(
+    mode === 'practice'
+      ? menuForLevel(session.menu, skill === 'sums' || skill === 'parsing' ? 10 : 1)
+      : menuForLevel(session.menu, effectiveLevel(session)),
+  );
 
   function startRound() {
     if (session.finished || round || flash) return;
@@ -138,7 +144,7 @@
 
     if (roll < session.params.tabProb) {
       // running tab: merged order drives the round; waves reveal over time
-      const tab = generateTab(session.menu, session.params, session.rng);
+      const tab = generateTab(visibleMenu, session.params, session.rng);
       round = createRound(tab.merged, makePayment(tab.merged.totalCents), session.till, 'tab');
       orderText = renderOrder(tab.waves[0], $settings.locale);
       numpadLocked = true;
@@ -152,7 +158,7 @@
       };
       waveT.start(revealNext, 3500);
     } else {
-      const order = generateOrder(session.menu, session.params, session.rng);
+      const order = generateOrder(visibleMenu, session.params, session.rng);
       const groups = roll < session.params.tabProb + session.params.splitProb
         ? splitOrder(order, session.rng)
         : null;
@@ -530,7 +536,7 @@
     {#if amendText}<p class="order amend">“{amendText}”</p>{/if}
     {#if hintText}<p class="hint-line">💡 {hintText}</p>{/if}
 
-    <MenuCard menu={session.menu} pricesHidden={menuHidden} {symbolFirst} />
+    <MenuCard menu={visibleMenu} pricesHidden={menuHidden} {symbolFirst} />
 
     {#key round.phase}
       <div class="phase">

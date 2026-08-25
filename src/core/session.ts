@@ -119,6 +119,11 @@ export function tickSession(s: SessionState, dtMs: number): SessionState {
   return checkLost(next);
 }
 
+/** The level that gates content (food) right now. */
+export function effectiveLevel(s: SessionState): number {
+  return s.mode === 'daily' ? dailyLevelFor(s.roundsDone) : s.level;
+}
+
 export function patienceFrac(s: SessionState): number {
   const head = s.queue[0];
   return head ? Math.max(head.patienceMs, 0) / head.maxPatienceMs : 0;

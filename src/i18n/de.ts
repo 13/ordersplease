@@ -83,6 +83,7 @@ export default {
   'menu.use-custom': 'Mit meiner Karte spielen',
   'menu.add': 'Getränk hinzufügen',
   'menu.name': 'Name',
+  'menu.food-header': 'Essen',
   'error.name-empty': 'Name darf nicht leer sein',
   'error.price-invalid': 'Preis muss ein positives Vielfaches von 10 Cent sein',
   'settings.title': 'Einstellungen',
