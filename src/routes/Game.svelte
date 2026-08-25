@@ -1,6 +1,6 @@
 <!-- src/routes/Game.svelte -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
   import { settings } from '../stores/settings';
   import { activeMenu } from '../stores/menu';
@@ -370,7 +370,7 @@
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
       session = { ...session, score: session.score - Math.min(50, gained) };
     }
-    focusFirst(mainEl);
+    tick().then(() => focusFirst(mainEl));
   }
 
   // retry keeps the same hash, so {#key $route} never remounts — reset in place
@@ -444,7 +444,7 @@
     pauseMenu = on && menu;
     const timers = [amendT, menuT, flashT, waveT];
     for (const t of timers) on ? t.pause() : t.resume();
-    if (!on) focusFirst(mainEl);
+    if (!on) tick().then(() => focusFirst(mainEl));
   }
 
   function onKey(e: KeyboardEvent) {

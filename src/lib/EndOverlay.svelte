@@ -51,13 +51,13 @@
     return () => clearInterval(iv);
   });
 
-  let rootEl = $state<HTMLElement | null>(null);
+  let actionsEl = $state<HTMLElement | null>(null);
   $effect(() => {
-    focusFirst(rootEl);
+    focusFirst(actionsEl);
   });
 </script>
 
-<div class="overlay" bind:this={rootEl}>
+<div class="overlay">
   {#if celebrate && !reduced}
     <div class="shower" aria-hidden="true">
       {#each rain as r (r.id)}
@@ -87,7 +87,7 @@
 
   <RoundDetails log={session.roundLog} />
 
-  <div class="overlay-actions">
+  <div class="overlay-actions" bind:this={actionsEl}>
     {#if onshare}
       <button onclick={onshare}>{shareLabel}</button>
     {/if}
