@@ -41,18 +41,16 @@
   import { PausableTimer } from '../lib/pausable';
   import { canMakeChange } from '../core/change';
   import { markSeen } from '../stores/seen';
-  import Money from '../lib/Money.svelte';
   import EndOverlay from '../lib/EndOverlay.svelte';
   import CoinBurst from '../lib/CoinBurst.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
   import PauseOverlay from '../lib/PauseOverlay.svelte';
   import ExplainerCard from '../lib/ExplainerCard.svelte';
-  import Numpad from '../lib/Numpad.svelte';
   import type { NumpadApi } from '../lib/Numpad.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
   import PatienceBar from '../lib/PatienceBar.svelte';
-  import TillGrid from '../lib/TillGrid.svelte';
-  import ChangePile from '../lib/ChangePile.svelte';
+  import SumPhase from '../lib/SumPhase.svelte';
+  import ChangePhase from '../lib/ChangePhase.svelte';
 
   let { mode, level = 1, skill = 'sums' }: {
     mode: SessionMode; level?: number; skill?: Skill;
@@ -655,39 +653,23 @@
     {#key round.phase}
       <div class="phase">
         {#if round.phase === 'sum'}
-          {#if numpadLocked}
-            <p class="prompt">{$t('game.tab-wait')}</p>
-          {:else}
-            <p class="prompt">{$t('game.sum-prompt')}</p>
-            <Numpad onsubmit={onSum} {symbolFirst} bindApi={(api) => (numpadApi = api)} />
-            <button class="tipp" onclick={onTipp}>{$t('game.tipp')}</button>
-          {/if}
+          <SumPhase
+            locked={numpadLocked} {symbolFirst}
+            onsum={onSum} ontipp={onTipp}
+            bindApi={(api) => (numpadApi = api)}
+          />
         {:else if round.phase === 'change'}
-          <p class="prompt">
-            {$t('game.pays')}:
-            {#each [...round.paymentPieces].sort((a, b) => b - a) as p, i (i)}
-              <Money denom={p} interactive={false} />
-            {/each}
-          </p>
-          <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} showKeys={hasKeyboard || wideScreen} />
-          <ChangePile {pile} showTotal={session.params.showPileTotal} onreturn={ret} />
-          {#if askOpen}
-            <div class="ask-row">
-              {#each COIN_DENOMS as d, i (d)}
-                <button onclick={() => onAsk(d)}>
-                  <kbd>{i + 1}</kbd> {$t('game.ask-for')} {denomLabel(d)}?
-                </button>
-              {/each}
-            </div>
-          {/if}
-          <div class="actions">
-            <button class="confirm" onclick={confirmChange}>
-              {round.changeDue === 0 ? $t('game.finish') : $t('game.confirm')}
-            </button>
-            <button class="ask" onclick={() => (askOpen = !askOpen)}>{$t('game.ask')}</button>
-            <button class="ask" onclick={onNotEnough}>{$t('game.not-enough')}</button>
-            <button class="tipp" onclick={onTipp}>{$t('game.tipp')}</button>
-          </div>
+          <ChangePhase
+            paymentPieces={round.paymentPieces}
+            {tillView} {pile}
+            showPileTotal={session.params.showPileTotal}
+            showKeys={hasKeyboard || wideScreen}
+            finishMode={round.changeDue === 0}
+            {askOpen}
+            ontake={take} onreturn={ret} onconfirm={confirmChange}
+            ontoggleask={() => (askOpen = !askOpen)}
+            onask={onAsk} onnotenough={onNotEnough} ontipp={onTipp}
+          />
         {/if}
       </div>
     {/key}
@@ -755,21 +737,8 @@
   .order { font-size: 1.15rem; font-style: italic; }
   .flash { animation: op-slide-up 0.2s ease-out; }
   .amend { color: var(--accent); animation: op-slide-up 0.3s ease-out; }
-  .tipp { background: var(--wood-light); color: var(--cream); }
   .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
-  .prompt { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: baseline; }
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
-  .actions {
-    display: flex; gap: 0.5rem;
-    position: sticky; bottom: 0;
-    padding: var(--space-2) 0 calc(var(--space-2) + env(safe-area-inset-bottom));
-    background: var(--wood);
-  }
-  .confirm { flex: 1; background: var(--ok); color: var(--cream); font-size: 1.1rem; }
-  .ask { background: var(--accent); color: var(--ink); }
-  .ask-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .ask-row button { background: var(--wood-light); color: var(--cream); }
-  .ask-row kbd { background: var(--cream); color: var(--ink); border-radius: 3px; padding: 0 4px; font-size: 0.7rem; margin-right: 2px; }
   .flash {
     position: fixed; inset: auto 0 30% 0; margin: 0 auto; width: fit-content;
     background: var(--cream); color: var(--ink);
