@@ -4,6 +4,7 @@
   import { get } from 'svelte/store';
   import { settings } from '../stores/settings';
   import { activeMenu } from '../stores/menu';
+  import { DEFAULT_MENU } from '../core/menu';
   import { stats, recordRound, recordDay } from '../stores/stats';
   import { progress } from '../stores/progress';
   import { t } from '../i18n';
@@ -53,8 +54,12 @@
         : undefined;
     const seed = mode === 'daily' ? dailySeed(new Date()) : Date.now() % 2 ** 31;
     rankedRun = mode === 'daily' ? isRanked(get(daily), new Date()) : false;
+    const isDaily = mode === 'daily';
     return createSession(
-      mode, level, get(activeMenu), get(settings).useCustomMenu, seed, override,
+      mode, level,
+      isDaily ? DEFAULT_MENU : get(activeMenu),
+      isDaily ? false : get(settings).useCustomMenu,
+      seed, override,
     );
   }
   let session = $state(newSession());
@@ -80,6 +85,8 @@
   let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
   let payerIndex = $state(0);
   let groupBaseText = $state('');
+  let disputeRoll = $state(1); // pre-rolled at payment creation; 1 = never fires
+  let disputeOptRoll = $state(0);
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -93,9 +100,9 @@
   );
 
   function startRound() {
+    if (session.finished || round || flash) return;
     clearTimeout(amendTimer);
     clearTimeout(waveTimer);
-    if (session.finished || round || flash) return;
     if (session.queue.length === 0) {
       if (session.mode === 'rush') return; // rush waits for the spawn timer
       session = spawnCustomer(session);
@@ -160,6 +167,8 @@
         }
       }
     }
+    disputeRoll = session.rng();
+    disputeOptRoll = session.rng();
     roundStartedAt = performance.now();
 
     const vis = session.params.menuVisibleSeconds;
@@ -187,6 +196,8 @@
       : generatePayment(sub.totalCents, session.params.paymentStyle, session.rng);
     round = createRound(sub, payment, session.till, 'split');
     orderText = `${groupBaseText} ${renderPayer(group, $settings.locale)}`;
+    disputeRoll = session.rng();
+    disputeOptRoll = session.rng();
     pile = [];
     askOpen = false;
     roundStartedAt = performance.now();
@@ -250,10 +261,10 @@
     round = submitChange(round, pile);
     if (round.phase === 'done') {
       if (round.success === true) {
-        const d = maybeDispute(round.paymentPieces, session.params.disputeProb, session.rng);
+        const d = maybeDispute(round.paymentPieces, session.params.disputeProb, () => disputeRoll);
         if (d) {
           dispute = d;
-          disputeOpts = session.rng() < 0.5
+          disputeOpts = disputeOptRoll < 0.5
             ? [d.actualNote, d.claimedNote]
             : [d.claimedNote, d.actualNote];
           return; // finishRound happens after the dispute is answered
@@ -344,14 +355,14 @@
       }));
     }
     if (session.mode === 'daily') {
-      const perfect = session.roundLog.length >= DAILY_ORDERS
-        && session.roundLog.every((e) => e.success);
+      const fullRounds = session.roundLog.filter((e) => !e.sub);
+      const perfect = fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success);
       daily.update((prev) => nextDailyRecord(prev, new Date(), session.score, perfect));
     }
   }
 
   function doShare() {
-    const served = session.roundLog.filter((e) => e.success).length;
+    const served = session.roundLog.filter((e) => !e.sub && e.success).length;
     const text = shareText(
       new Date(), session.score, served, DAILY_ORDERS, get(daily)?.streak ?? 1,
     );
@@ -372,6 +383,7 @@
         if (!flash) finalize();
         return;
       }
+      if (dispute) return; // freeze the bar while the customer disputes
       // head walking out during a live round = that round times out (see rules above)
       if (!dispute && round && session.queue[0] && session.queue[0].patienceMs <= dt) {
         round = timeoutRound(round);

@@ -22,6 +22,7 @@ export interface RoundLogEntry {
   success: boolean;
   errors: RoundError[];
   scoreGained: number;
+  sub?: boolean; // split payer before the last — not a full customer round
 }
 
 export interface RoundMeta { orderText: string; ms: number; }
@@ -181,6 +182,6 @@ export function completeSubRound(s: SessionState, round: RoundState, meta: Round
     score: s.score + gained,
     streak: success && firstTry ? s.streak + 1 : 0,
     till: success ? round.till : s.till,
-    roundLog: [...s.roundLog, entry],
+    roundLog: [...s.roundLog, { ...entry, sub: true }],
   };
 }

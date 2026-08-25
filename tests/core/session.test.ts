@@ -166,5 +166,6 @@ describe('completeSubRound', () => {
     expect(s.score).toBeGreaterThan(0);
     expect(s.roundLog.length).toBe(1);
     expect(s.till).toEqual(r.till);
+    expect(s.roundLog[0].sub).toBe(true);
   });
 });

@@ -19,7 +19,8 @@
     note?: string | null;
   } = $props();
 
-  const served = $derived(session.roundLog.filter((e) => e.success).length);
+  const fullRounds = $derived(session.roundLog.filter((e) => !e.sub));
+  const served = $derived(fullRounds.filter((e) => e.success).length);
   const showAccuracy = $derived(session.mode === 'practice' || session.mode === 'daily');
 </script>
 
@@ -30,7 +31,7 @@
   {/if}
   <p>{$t('game.score')}: {session.score}</p>
   {#if showAccuracy}
-    <p>{$t('result.accuracy')}: {served}/{session.roundLog.length}</p>
+    <p>{$t('result.accuracy')}: {served}/{fullRounds.length}</p>
   {/if}
   {#if note}<p class="note">{note}</p>{/if}
   {#if session.mode === 'rush' && wasNewHigh}
