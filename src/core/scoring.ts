@@ -2,6 +2,7 @@ export interface RoundScoreInput {
   success: boolean;
   firstTry: boolean;
   usedAsk: boolean;
+  usedTrapCall?: boolean;
   patienceFrac: number;
   streakBefore: number;
 }
@@ -19,7 +20,7 @@ export function scoreRound(i: RoundScoreInput): number {
   const speed = 1 + 2 * Math.min(Math.max(i.patienceFrac, 0), 1);
   const firstTry = i.firstTry ? FIRST_TRY_BONUS : 1;
   const raw = BASE * speed * firstTry * streakMultiplier(i.streakBefore);
-  return Math.round(raw) + (i.usedAsk ? ASK_BONUS : 0);
+  return Math.round(raw) + (i.usedAsk ? ASK_BONUS : 0) + (i.usedTrapCall ? ASK_BONUS : 0);
 }
 
 export function maxRoundScore(): number {

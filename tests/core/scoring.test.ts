@@ -27,4 +27,10 @@ describe('scoring', () => {
     expect(starsFor(3200, orders)).toBe(2); // ≥ 70%
     expect(starsFor(1000, orders)).toBe(1);
   });
+  it('trap-call bonus adds 50 like the ask bonus', () => {
+    expect(scoreRound({
+      success: true, firstTry: true, usedAsk: false, usedTrapCall: true,
+      patienceFrac: 1, streakBefore: 0,
+    })).toBe(500);
+  });
 });

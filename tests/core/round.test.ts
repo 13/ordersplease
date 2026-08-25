@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  createRound, submitSum, submitChange, askCustomer, timeoutRound, MAX_TRIES,
+  createRound, submitSum, submitChange, askCustomer, timeoutRound, MAX_TRIES, challengePayment,
 } from '$core/round';
 import { fullTill } from '$core/till';
 
@@ -108,5 +108,48 @@ describe('timeout', () => {
     const s = timeoutRound(createRound(order2beer, [1000], fullTill()));
     expect(s.success).toBe(false);
     expect(s.errors).toEqual(['timeout']);
+  });
+});
+
+describe('payment traps', () => {
+  it('correct challenge tops up the payment and continues', () => {
+    let s = createRound(order2beer, [500, 200], fullTill()); // 7,00 for 8,00 due
+    s = submitSum(s, 800);
+    s = challengePayment(s);
+    expect(s.phase).toBe('change');
+    expect(s.usedTrapCall).toBe(true);
+    expect(s.paymentCents).toBeGreaterThanOrEqual(800);
+    expect(s.changeDue).toBe(s.paymentCents - 800);
+  });
+  it('challenging a fine payment burns a change try', () => {
+    let s = createRound(order2beer, [1000], fullTill());
+    s = submitSum(s, 800);
+    s = challengePayment(s);
+    expect(s.usedTrapCall).toBe(false);
+    expect(s.changeTries).toBe(1);
+  });
+  it('confirming change on an underpaid payment fails with trap-missed', () => {
+    let s = createRound(order2beer, [500, 200], fullTill());
+    s = submitSum(s, 800);
+    s = submitChange(s, []);
+    expect(s.success).toBe(false);
+    expect(s.errors).toEqual(['trap-missed']);
+  });
+});
+
+describe('round kinds', () => {
+  it('tab rounds attribute sum failure to tab-wrong', () => {
+    let s = createRound(order2beer, [1000], fullTill(), 'tab');
+    s = submitSum(s, 700);
+    s = submitSum(s, 900);
+    expect(s.errors).toContain('sum-wrong');
+    expect(s.errors).toContain('tab-wrong');
+    expect(s.errors).not.toContain('parse-wrong');
+  });
+  it('split rounds attribute sum failure to split-wrong even on one line', () => {
+    let s = createRound(order2beer, [1000], fullTill(), 'split');
+    s = submitSum(s, 700);
+    s = submitSum(s, 900);
+    expect(s.errors).toContain('split-wrong');
   });
 });
