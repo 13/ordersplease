@@ -11,9 +11,13 @@
     createSession, tickSession, completeRound, spawnCustomer, MAX_LIVES,
   } from '../core/session';
   import {
-    createRound, submitSum, submitChange, askCustomer, timeoutRound, type RoundState,
+    createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment,
+    type RoundState,
   } from '../core/round';
-  import { generateOrder, generatePayment, amendOrder, piecesTotal } from '../core/order';
+  import {
+    generateOrder, generatePayment, generateUnderPayment, amendOrder, piecesTotal,
+  } from '../core/order';
+  import { maybeDispute, type Dispute } from '../core/dispute';
   import { renderOrder, renderAmendment } from '../core/text-order';
   import { starsFor } from '../core/scoring';
   import { formatEuro } from '../core/money';
@@ -21,6 +25,7 @@
   import { denomLabel } from '../lib/denom-view';
   import { chaChing, coinClink, errorBuzz } from '../lib/sound';
   import EndOverlay from '../lib/EndOverlay.svelte';
+  import DisputeDialog from '../lib/DisputeDialog.svelte';
   import Numpad from '../lib/Numpad.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
   import PatienceBar from '../lib/PatienceBar.svelte';
@@ -39,6 +44,9 @@
   let menuHidden = $state(false);
   let askOpen = $state(false);
   let flash = $state<string | null>(null);
+  let dispute = $state<Dispute | null>(null);
+  let disputeOpts = $state<number[]>([]);           // fixed at dialog-open time; never roll rng in markup
+  let disputeVerdict = $state<string | null>(null); // overrides the success flash once
   let finalized = $state(false);
   let wasNewHigh = $state(false);
   let roundStartedAt = 0;
@@ -65,7 +73,9 @@
       session = spawnCustomer(session);
     }
     const order = generateOrder(session.menu, session.params, session.rng);
-    const payment = generatePayment(order.totalCents, session.params.paymentStyle, session.rng);
+    const payment = session.rng() < session.params.underpayProb
+      ? generateUnderPayment(order.totalCents, session.rng)
+      : generatePayment(order.totalCents, session.params.paymentStyle, session.rng);
     round = createRound(order, payment, session.till);
     orderText = renderOrder(order, $settings.locale);
     amendText = null;
@@ -103,11 +113,14 @@
     const ms = performance.now() - roundStartedAt;
     const failed = done.success !== true;
     stats.update((s) => recordRound(s, done.errors, ms, failed));
-    flash = !failed
-      ? $t('game.correct')
-      : done.errors.includes('change-wrong')
-        ? `${$t('game.change-was')} ${formatEuro(done.changeDue, symbolFirst)}`
-        : `${$t('game.wrong')} ${formatEuro(done.order.totalCents, symbolFirst)}`;
+    flash = disputeVerdict !== null
+      ? disputeVerdict
+      : !failed
+        ? $t('game.correct')
+        : done.errors.includes('change-wrong')
+          ? `${$t('game.change-was')} ${formatEuro(done.changeDue, symbolFirst)}`
+          : `${$t('game.wrong')} ${formatEuro(done.order.totalCents, symbolFirst)}`;
+    disputeVerdict = null;
     if (failed) errorBuzz($settings.sound);
     else chaChing($settings.sound);
     session = completeRound(session, done, { orderText, ms });
@@ -141,8 +154,19 @@
   function confirmChange() {
     if (!round) return;
     round = submitChange(round, pile);
-    if (round.phase === 'done') finishRound();
-    else {
+    if (round.phase === 'done') {
+      if (round.success === true) {
+        const d = maybeDispute(round.paymentPieces, session.params.disputeProb, session.rng);
+        if (d) {
+          dispute = d;
+          disputeOpts = session.rng() < 0.5
+            ? [d.actualNote, d.claimedNote]
+            : [d.claimedNote, d.actualNote];
+          return; // finishRound happens after the dispute is answered
+        }
+      }
+      finishRound();
+    } else {
       pile = [];
       errorBuzz($settings.sound);
     }
@@ -152,6 +176,42 @@
     askOpen = false;
     round = askCustomer(round, d);
     if (round.phase === 'done') finishRound();
+  }
+  function onNotEnough() {
+    if (!round) return;
+    const wasTrapCall = round.usedTrapCall;
+    round = challengePayment(round);
+    if (round.phase === 'done') {
+      finishRound();
+    } else if (!wasTrapCall && round.usedTrapCall) {
+      flash = $t('game.trap-good');
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => {
+        flash = null;
+        startRound(); // no-op while this round is live — timer just clears the flash
+      }, 1000);
+    } else {
+      errorBuzz($settings.sound);
+    }
+  }
+  function resolveDispute(chosen: number) {
+    if (!dispute || !round) return;
+    const d = dispute;
+    dispute = null;
+    const correct = chosen === d.actualNote;
+    if (correct) {
+      disputeVerdict = $t('game.dispute-right');
+      session = { ...session, score: session.score + 25 };
+    } else {
+      round = { ...round, errors: [...round.errors, 'dispute-wrong'] };
+      disputeVerdict = `${$t('game.dispute-wrong-msg').replace('{note}', denomLabel(d.actualNote))}`;
+    }
+    finishRound();
+    if (!correct) {
+      // penalty: −50, floored at what the round just earned
+      const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
+      session = { ...session, score: session.score - Math.min(50, gained) };
+    }
   }
 
   // retry keeps the same hash, so {#key $route} never remounts — reset in place
@@ -164,6 +224,8 @@
     );
     round = null;
     flash = null;
+    dispute = null;
+    disputeVerdict = null;
     finalized = false;
     wasNewHigh = false;
     pile = [];
@@ -197,7 +259,7 @@
         return;
       }
       // head walking out during a live round = that round times out (see rules above)
-      if (round && session.queue[0] && session.queue[0].patienceMs <= dt) {
+      if (!dispute && round && session.queue[0] && session.queue[0].patienceMs <= dt) {
         round = timeoutRound(round);
         finishRound();
       }
@@ -260,6 +322,7 @@
       <div class="actions">
         <button class="confirm" onclick={confirmChange}>{$t('game.confirm')}</button>
         <button class="ask" onclick={() => (askOpen = !askOpen)}>{$t('game.ask')}</button>
+        <button class="ask" onclick={onNotEnough}>{$t('game.not-enough')}</button>
       </div>
       {#if askOpen}
         <div class="ask-row">
@@ -275,6 +338,15 @@
 
   {#if session.finished && finalized}
     <EndOverlay {session} {level} {stars} {wasNewHigh} onretry={restart} />
+  {/if}
+
+  {#if dispute}
+    <DisputeDialog
+      claimText={$t('game.dispute-claim').replace('{note}', denomLabel(dispute.claimedNote))}
+      question={$t('game.dispute-question')}
+      options={disputeOpts.map((v) => ({ label: denomLabel(v), value: v }))}
+      onanswer={resolveDispute}
+    />
   {/if}
 </main>
 
