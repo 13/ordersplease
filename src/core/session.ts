@@ -7,6 +7,7 @@ import { mulberry32 } from './order';
 import type { RoundState, RoundError } from './round';
 import { scoreRound } from './scoring';
 import { dailyLevelFor } from './daily';
+import { rollHappyHourStart } from './happy-hour';
 
 export interface Customer { id: number; patienceMs: number; maxPatienceMs: number; }
 
@@ -45,6 +46,7 @@ export interface SessionState {
   spawnCooldownMs: number;
   roundLog: RoundLogEntry[];
   lastWalkouts: number;
+  happyHourStart: number | null;
 }
 
 function spawnIntervalMs(params: DifficultyParams): number {
@@ -66,12 +68,13 @@ export function createSession(
   const rng = mulberry32(seed);
   const till = params.scarceDenoms === 0 ? fullTill() : scarceTill(rng, params.scarceDenoms);
   const menu = isCustomMenu ? baseMenu : applyPriceStyle(baseMenu, params.priceStyle);
+  const happyHourStart = rollHappyHourStart(params, rng);
   const s: SessionState = {
     mode, level, elapsedMs: 0, menu, till,
     queue: [], livesLost: 0, score: 0, streak: 0, roundsDone: 0,
     finished: null, params, rng, nextCustomerId: 1,
     spawnCooldownMs: spawnIntervalMs(params),
-    roundLog: [], lastWalkouts: 0,
+    roundLog: [], lastWalkouts: 0, happyHourStart,
   };
   return spawnCustomer(s);
 }

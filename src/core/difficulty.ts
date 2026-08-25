@@ -18,6 +18,8 @@ export interface DifficultyParams {
   disputeProb: number;
   tabProb: number;
   splitProb: number;
+  happyHourProb: number;
+  rowdyProb: number;
 }
 
 export const MAX_LEVEL = 30;
@@ -28,23 +30,28 @@ const ANCHORS: Anchor[] = [
   { level: 1,  itemsMin: 1, itemsMax: 2, priceStyle: 'half', paymentStyle: 'exact-or-round',
     patienceSeconds: 35, menuVisibleSeconds: null, scarceDenoms: 0, midOrderChangeProb: 0,
     showPileTotal: true,  ordersPerLevel: 6,
-    underpayProb: 0, disputeProb: 0, tabProb: 0, splitProb: 0 },
+    underpayProb: 0, disputeProb: 0, tabProb: 0, splitProb: 0,
+    happyHourProb: 0, rowdyProb: 0 },
   { level: 6,  itemsMin: 2, itemsMax: 3, priceStyle: 'tens', paymentStyle: 'round',
     patienceSeconds: 28, menuVisibleSeconds: 5,    scarceDenoms: 1, midOrderChangeProb: 0.1,
     showPileTotal: true,  ordersPerLevel: 8,
-    underpayProb: 0.08, disputeProb: 0, tabProb: 0, splitProb: 0 },
+    underpayProb: 0.08, disputeProb: 0, tabProb: 0, splitProb: 0,
+    happyHourProb: 0, rowdyProb: 0 },
   { level: 14, itemsMin: 3, itemsMax: 5, priceStyle: 'any',  paymentStyle: 'awkward',
     patienceSeconds: 20, menuVisibleSeconds: 3,    scarceDenoms: 2, midOrderChangeProb: 0.25,
     showPileTotal: false, ordersPerLevel: 10,
-    underpayProb: 0.15, disputeProb: 0.12, tabProb: 0.18, splitProb: 0.12 },
+    underpayProb: 0.15, disputeProb: 0.12, tabProb: 0.18, splitProb: 0.12,
+    happyHourProb: 0.3, rowdyProb: 0 },
   { level: 22, itemsMin: 4, itemsMax: 6, priceStyle: 'any',  paymentStyle: 'awkward',
     patienceSeconds: 15, menuVisibleSeconds: 0,    scarceDenoms: 3, midOrderChangeProb: 0.35,
     showPileTotal: false, ordersPerLevel: 12,
-    underpayProb: 0.2, disputeProb: 0.2, tabProb: 0.25, splitProb: 0.2 },
+    underpayProb: 0.2, disputeProb: 0.2, tabProb: 0.25, splitProb: 0.2,
+    happyHourProb: 0.4, rowdyProb: 0.1 },
   { level: 30, itemsMin: 5, itemsMax: 7, priceStyle: 'any',  paymentStyle: 'awkward',
     patienceSeconds: 12, menuVisibleSeconds: 0,    scarceDenoms: 4, midOrderChangeProb: 0.4,
     showPileTotal: false, ordersPerLevel: 12,
-    underpayProb: 0.25, disputeProb: 0.25, tabProb: 0.3, splitProb: 0.25 },
+    underpayProb: 0.25, disputeProb: 0.25, tabProb: 0.3, splitProb: 0.25,
+    happyHourProb: 0.5, rowdyProb: 0.15 },
 ];
 
 function lerp(a: number, b: number, t: number): number {
@@ -83,12 +90,16 @@ export function paramsForLevel(level: number): DifficultyParams {
     disputeProb: 0,
     tabProb: 0,
     splitProb: 0,
+    happyHourProb: 0,
+    rowdyProb: 0,
   };
   const gated = (value: number, entry: number) => (l < entry ? 0 : value);
   result.underpayProb = gated(lerp(lo.underpayProb, hi.underpayProb, t), 6);
   result.disputeProb = gated(lerp(lo.disputeProb, hi.disputeProb, t), 9);
   result.tabProb = gated(lerp(lo.tabProb, hi.tabProb, t), 8);
   result.splitProb = gated(lerp(lo.splitProb, hi.splitProb, t), 11);
+  result.happyHourProb = gated(lerp(lo.happyHourProb, hi.happyHourProb, t), 12);
+  result.rowdyProb = gated(lerp(lo.rowdyProb, hi.rowdyProb, t), 16);
   return result;
 }
 
@@ -124,6 +135,8 @@ export function practiceParams(skill: Skill): DifficultyParams {
     disputeProb: 0,
     tabProb: 0,
     splitProb: 0,
+    happyHourProb: 0,
+    rowdyProb: 0,
   };
   switch (skill) {
     case 'sums':

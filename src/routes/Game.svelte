@@ -5,7 +5,7 @@
   import { settings } from '../stores/settings';
   import { activeMenu } from '../stores/menu';
   import { localizedDefaultMenu, menuForLevel } from '../core/menu';
-  import { stats, recordRound, recordDay } from '../stores/stats';
+  import { stats, recordRound, recordDay, recordTips } from '../stores/stats';
   import { progress, improveBest } from '../stores/progress';
   import { t } from '../i18n';
   import {
@@ -34,6 +34,9 @@
   import { renderOrder, renderAmendment, renderWave, renderPayer } from '../core/text-order';
   import { starsFor } from '../core/scoring';
   import { formatEuro } from '../core/money';
+  import { happyHourActive, discountMenu } from '../core/happy-hour';
+  import { tipFor, tipEligible } from '../core/tips';
+  import { history, recordDayEntry, pruneHistory, localDayKey } from '../stores/history';
   import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
   import { focusFirst } from '../lib/focus';
@@ -123,6 +126,9 @@
   let tabServed = false;
   let splitServed = false;
   let badgeToast = $state<string | null>(null);
+  let rowdy = $state(false);
+  let tipJar = $state(0);
+  let tipsEarnedSession = 0;
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -139,6 +145,8 @@
       ? menuForLevel(session.menu, skill === 'sums' || skill === 'parsing' ? 10 : 1)
       : menuForLevel(session.menu, effectiveLevel(session)),
   );
+  const happyHour = $derived(happyHourActive(session));
+  const pricedMenu = $derived(happyHour ? discountMenu(visibleMenu) : visibleMenu);
 
   function startRound() {
     if (session.finished || round || flash) return;
@@ -166,7 +174,7 @@
 
     if (roll < session.params.tabProb) {
       // running tab: merged order drives the round; waves reveal over time
-      const tab = generateTab(visibleMenu, session.params, session.rng);
+      const tab = generateTab(pricedMenu, session.params, session.rng);
       round = createRound(tab.merged, makePayment(tab.merged.totalCents), session.till, 'tab');
       orderText = renderOrder(tab.waves[0], $settings.locale);
       numpadLocked = true;
@@ -181,7 +189,7 @@
       };
       waveT.start(revealNext, 3500);
     } else {
-      const order = generateOrder(visibleMenu, session.params, session.rng);
+      const order = generateOrder(pricedMenu, session.params, session.rng);
       const groups = roll < session.params.tabProb + session.params.splitProb
         ? splitOrder(order, session.rng)
         : null;
@@ -215,6 +223,23 @@
     }
     disputeRoll = session.rng();
     disputeOptRoll = session.rng();
+    const rowdyRoll = session.rng();
+    rowdy = round !== null
+      && rowdyRoll < session.params.rowdyProb
+      && round.kind === 'normal'
+      && round.paymentCents >= round.order.totalCents
+      && !splitGroups;
+    if (rowdy && session.queue[0]) {
+      const head = session.queue[0];
+      const capped = Math.max(5000, Math.floor(head.maxPatienceMs * 0.5));
+      session = {
+        ...session,
+        queue: [
+          { ...head, patienceMs: Math.min(head.patienceMs, capped), maxPatienceMs: capped },
+          ...session.queue.slice(1),
+        ],
+      };
+    }
     roundStartedAt = performance.now();
 
     const vis = session.params.menuVisibleSeconds;
@@ -277,8 +302,34 @@
       pulseHearts();
     } else chaChing($settings.sound);
     const frac = patienceFrac(session);
+    const groupTotal = splitGroups
+      ? splitGroups.reduce((s, g) => s + orderTotal(g), 0)
+      : done.order.totalCents;
+    const earnsTip = (mode === 'level' || mode === 'rush' || mode === 'daily')
+      && tipEligible({
+        success: done.success === true,
+        firstTry: done.sumTries === 0 && done.changeTries === 0,
+        usedHint: done.usedHint,
+        patienceFrac: frac,
+      });
     session = completeRound(session, done, { orderText, ms });
     maxStreak = Math.max(maxStreak, session.streak);
+    if (rowdy && done.success === true) {
+      const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
+      session = {
+        ...session,
+        score: session.score + gained,
+        roundLog: session.roundLog.map((e, i, arr) =>
+          i === arr.length - 1 ? { ...e, scoreGained: e.scoreGained * 2 } : e),
+      };
+    }
+    rowdy = false;
+    if (earnsTip) {
+      const tip = tipFor(groupTotal);
+      tipJar += tip;
+      tipsEarnedSession += tip;
+      stats.update((s) => recordTips(s, tip));
+    }
     if (hintDebt > 0) {
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
       session = { ...session, score: session.score - Math.min(hintDebt, gained) };
@@ -298,6 +349,7 @@
     disputeVerdict = null;
     round = null;
     pile = [];
+    askOpen = false; // don't let a stale ask row eat the next Escape during the flash
     if (done.success === true && done.usedTrapCall) trapCaught = true;
     if (done.success === true && done.kind === 'tab') tabServed = true;
     if (done.success === true && splitGroups) splitServed = true;
@@ -338,7 +390,7 @@
     round = submitChange(round, pile);
     if (round.phase === 'done') {
       if (round.success === true) {
-        const d = maybeDispute(round.paymentPieces, session.params.disputeProb, () => disputeRoll);
+        const d = rowdy ? null : maybeDispute(round.paymentPieces, session.params.disputeProb, () => disputeRoll);
         if (d) {
           dispute = d;
           disputeOpts = disputeOptRoll < 0.5
@@ -382,7 +434,8 @@
     round = markHint(round);
     hintText = hintFor(round, hintIndex, $settings.locale);
     hintIndex += 1;
-    hintDebt += 25;
+    if (tipJar >= 50) tipJar -= 50;
+    else hintDebt += 25;
   }
 
   function resolveDispute(chosen: number) {
@@ -434,6 +487,9 @@
     tabServed = false;
     splitServed = false;
     badgeToast = null;
+    rowdy = false;
+    tipJar = 0;
+    tipsEarnedSession = 0;
     startRound();
   }
 
@@ -477,6 +533,17 @@
       badgeToast = got.map((id) => `🏅 ${get(t)(`badge.${id}`)}`).join('  ');
       setTimeout(() => (badgeToast = null), 3000);
     }
+
+    const key = localDayKey(new Date());
+    history.update((h) => pruneHistory(
+      recordDayEntry(h, key, {
+        rounds: fullRounds.length,
+        correct: fullRounds.filter((e) => e.success).length,
+        ms: fullRounds.reduce((s, e) => s + e.ms, 0),
+        tips: tipsEarnedSession,
+      }),
+      key,
+    ));
   }
 
   function doShare() {
@@ -495,6 +562,7 @@
 
   function setPaused(on: boolean, menu = false) {
     if (session.finished) return;
+    if (on) askOpen = false; // a stale open ask row would swallow the resume Escape
     paused = on;
     pauseMenu = on && menu;
     const timers = [amendT, menuT, flashT, waveT];
@@ -630,8 +698,16 @@
       : mode === 'practice' ? $t('practice.title')
       : $t('daily.title')}</span>
     {#if session.streak >= 3}<span class="flame">🔥{session.streak}</span>{/if}
+    {#if tipJar > 0}<span class="jar">🫙 {formatEuro(tipJar, symbolFirst)}</span>{/if}
     <span>{$t('game.score')}: {session.score}</span>
   </header>
+
+  {#if happyHour || rowdy}
+    <div class="chips">
+      {#if happyHour}<span class="chip">🍻 {$t('game.happy-hour')}</span>{/if}
+      {#if rowdy}<span class="chip">⏱ {$t('game.rowdy')}</span>{/if}
+    </div>
+  {/if}
 
   <div class="queue">
     {#each session.queue as c, i (c.id)}
@@ -648,7 +724,7 @@
     {#if amendText}<p class="order amend">“{amendText}”</p>{/if}
     {#if hintText}<p class="hint-line">💡 {hintText}</p>{/if}
 
-    <MenuCard menu={visibleMenu} pricesHidden={menuHidden} {symbolFirst} />
+    <MenuCard menu={pricedMenu} pricesHidden={menuHidden} {symbolFirst} />
 
     {#key round.phase}
       <div class="phase">
@@ -657,6 +733,7 @@
             locked={numpadLocked} {symbolFirst}
             onsum={onSum} ontipp={onTipp}
             bindApi={(api) => (numpadApi = api)}
+            tippHint={tipJar >= 50 ? ` (${formatEuro(50, symbolFirst)})` : ' (−25)'}
           />
         {:else if round.phase === 'change'}
           <ChangePhase
@@ -669,6 +746,7 @@
             ontake={take} onreturn={ret} onconfirm={confirmChange}
             ontoggleask={() => (askOpen = !askOpen)}
             onask={onAsk} onnotenough={onNotEnough} ontipp={onTipp}
+            tippHint={tipJar >= 50 ? ` (${formatEuro(50, symbolFirst)})` : ' (−25)'}
           />
         {/if}
       </div>
@@ -729,6 +807,14 @@
   header { display: flex; justify-content: space-between; align-items: center; }
   .lives { color: var(--danger); }
   .lives.pulse { animation: op-pulse 0.5s ease-in-out; }
+  .jar { font-size: 0.9rem; }
+  .chips { display: flex; gap: 0.4rem; }
+  .chip {
+    background: var(--accent); color: var(--ink);
+    border-radius: 999px; padding: 0.1rem 0.6rem;
+    font-size: 0.8rem; font-weight: bold;
+    animation: op-slide-up 0.2s ease-out;
+  }
   .flame { color: var(--accent); font-weight: bold; animation: op-pop 0.3s ease-out; }
   .queue { display: flex; gap: 0.75rem; min-height: 40px; }
   .customer { width: 64px; opacity: 0.5; }

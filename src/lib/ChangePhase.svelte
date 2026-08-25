@@ -9,13 +9,14 @@
 
   let {
     paymentPieces, tillView, pile, showPileTotal, showKeys, finishMode, askOpen,
-    ontake, onreturn, onconfirm, ontoggleask, onask, onnotenough, ontipp,
+    ontake, onreturn, onconfirm, ontoggleask, onask, onnotenough, ontipp, tippHint = '',
+    showExtras = true,
   }: {
     paymentPieces: Denom[]; tillView: Till; pile: Denom[];
     showPileTotal: boolean; showKeys: boolean; finishMode: boolean; askOpen: boolean;
     ontake: (d: Denom) => void; onreturn: (index: number) => void;
     onconfirm: () => void; ontoggleask: () => void; onask: (d: Denom) => void;
-    onnotenough: () => void; ontipp: () => void;
+    onnotenough: () => void; ontipp: () => void; tippHint?: string; showExtras?: boolean;
   } = $props();
 </script>
 
@@ -41,8 +42,10 @@
     {finishMode ? $t('game.finish') : $t('game.confirm')}
   </button>
   <button class="ask" onclick={ontoggleask}>{$t('game.ask')}</button>
-  <button class="ask" onclick={onnotenough}>{$t('game.not-enough')}</button>
-  <button class="tipp" onclick={ontipp}>{$t('game.tipp')}</button>
+  {#if showExtras}
+    <button class="ask" onclick={onnotenough}>{$t('game.not-enough')}</button>
+    <button class="tipp" onclick={ontipp}>{$t('game.tipp')}{tippHint}</button>
+  {/if}
 </div>
 
 <style>

@@ -8,6 +8,8 @@
 
 <p align="center"><a href="https://13.github.io/ordersplease/">▶ Play in the browser</a></p>
 
+<p align="center"><sub>Installable as an app — see <a href="docs/twa.md">docs/twa.md</a> for the Play Store (TWA) walkthrough.</sub></p>
+
 - **Levels**: 30 levels ramping from single drinks with round prices to
   six-item orders, hidden menus, coin shortages and mid-order changes.
 - **Rush**: endless Friday night. Three walkouts end the shift.

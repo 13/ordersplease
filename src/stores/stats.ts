@@ -8,6 +8,7 @@ export interface Stats {
   totalMs: number;
   days: Record<string, true>;
   rushHigh: number;
+  tipsEarnedCents?: number;
 }
 
 export const EMPTY: Stats = {
@@ -15,7 +16,7 @@ export const EMPTY: Stats = {
     'sum-wrong': 0, 'change-wrong': 0, 'shortage-missed': 0, 'parse-wrong': 0, timeout: 0,
     'trap-missed': 0, 'dispute-wrong': 0, 'tab-wrong': 0, 'split-wrong': 0,
   },
-  rounds: 0, roundsFailed: 0, totalMs: 0, days: {}, rushHigh: 0,
+  rounds: 0, roundsFailed: 0, totalMs: 0, days: {}, rushHigh: 0, tipsEarnedCents: 0,
 };
 
 export const stats = persisted<Stats>('op.stats', EMPTY);
@@ -52,4 +53,8 @@ export function dayStreak(s: Stats, today: Date): number {
     d.setDate(d.getDate() - 1);
   }
   return streak;
+}
+
+export function recordTips(s: Stats, cents: number): Stats {
+  return { ...s, tipsEarnedCents: (s.tipsEarnedCents ?? 0) + cents };
 }

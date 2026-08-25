@@ -105,3 +105,24 @@ describe('practiceParams', () => {
     expect(SKILL_ERROR.traps).toBe('trap-missed');
   });
 });
+
+describe('round-6 mechanic params', () => {
+  it('happy hour gates at 12', () => {
+    expect(paramsForLevel(11).happyHourProb).toBe(0);
+    expect(paramsForLevel(12).happyHourProb).toBeGreaterThan(0);
+    expect(paramsForLevel(14).happyHourProb).toBeCloseTo(0.3);
+    expect(paramsForLevel(30).happyHourProb).toBeCloseTo(0.5);
+  });
+  it('rowdy gates at 16', () => {
+    expect(paramsForLevel(15).rowdyProb).toBe(0);
+    expect(paramsForLevel(16).rowdyProb).toBeGreaterThan(0);
+    expect(paramsForLevel(22).rowdyProb).toBeCloseTo(0.1);
+    expect(paramsForLevel(30).rowdyProb).toBeCloseTo(0.15);
+  });
+  it('practice zeroes both', () => {
+    for (const s of ['sums', 'traps', 'disputes'] as const) {
+      expect(practiceParams(s).happyHourProb).toBe(0);
+      expect(practiceParams(s).rowdyProb).toBe(0);
+    }
+  });
+});
