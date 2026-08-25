@@ -1,5 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="96" fill="#2b1d12"/>
-  <circle cx="256" cy="256" r="150" fill="#d99a2b"/>
-  <text x="256" y="300" font-size="140" text-anchor="middle" fill="#2b1d12" font-family="serif">€</text>
+  <!-- beer glass -->
+  <path d="M148 168 h150 l-16 226 a26 26 0 0 1 -26 24 h-66 a26 26 0 0 1 -26 -24 z" fill="#d99a2b"/>
+  <path d="M152 224 h142 l-4 44 h-134 z" fill="#f0c96a" opacity="0.6"/>
+  <!-- foam -->
+  <circle cx="170" cy="158" r="28" fill="#f5ecd7"/>
+  <circle cx="220" cy="144" r="34" fill="#f5ecd7"/>
+  <circle cx="272" cy="156" r="28" fill="#f5ecd7"/>
+  <rect x="146" y="152" width="154" height="24" rx="12" fill="#f5ecd7"/>
+  <!-- coin stack -->
+  <ellipse cx="372" cy="392" rx="60" ry="20" fill="#a5673f"/>
+  <ellipse cx="372" cy="372" rx="60" ry="20" fill="#c9962e"/>
+  <ellipse cx="372" cy="352" rx="60" ry="20" fill="#d99a2b"/>
+  <ellipse cx="372" cy="344" rx="60" ry="20" fill="#f0c96a"/>
+  <text x="372" y="354" font-size="28" text-anchor="middle" fill="#2b1d12"
+    font-family="Georgia, serif" font-weight="bold">€</text>
 </svg>
