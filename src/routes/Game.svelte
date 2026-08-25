@@ -18,6 +18,7 @@
     dailySeed, dailyLevelFor, DAILY_ORDERS, isRanked, nextDailyRecord, shareText,
   } from '../core/daily';
   import { daily } from '../stores/daily';
+  import { badges } from '../stores/badges';
   import {
     createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment, markHint,
     type RoundState,
@@ -29,6 +30,7 @@
     generateTab, splitOrder, orderTotal,
   } from '../core/order';
   import { maybeDispute, type Dispute } from '../core/dispute';
+  import { newBadges } from '../core/badges';
   import { renderOrder, renderAmendment, renderWave, renderPayer } from '../core/text-order';
   import { starsFor } from '../core/scoring';
   import { formatEuro } from '../core/money';
@@ -117,6 +119,12 @@
   let hintText = $state<string | null>(null);
   let hintIndex = $state(0);
   let hintDebt = 0; // 25 per Tipp press, settled against the round's gained score
+  let maxStreak = 0;
+  let trapCaught = false;
+  let disputeWon = false;
+  let tabServed = false;
+  let splitServed = false;
+  let badgeToast = $state<string | null>(null);
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -268,6 +276,7 @@
     } else chaChing($settings.sound);
     const frac = patienceFrac(session);
     session = completeRound(session, done, { orderText, ms });
+    maxStreak = Math.max(maxStreak, session.streak);
     if (hintDebt > 0) {
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
       session = { ...session, score: session.score - Math.min(hintDebt, gained) };
@@ -287,6 +296,9 @@
     disputeVerdict = null;
     round = null;
     pile = [];
+    if (done.success === true && done.usedTrapCall) trapCaught = true;
+    if (done.success === true && done.kind === 'tab') tabServed = true;
+    if (done.success === true && splitGroups) splitServed = true;
     splitGroups = null;
     hintText = null;
     amendT.clear();
@@ -379,6 +391,7 @@
     if (correct) {
       disputeVerdict = $t('game.dispute-right');
       session = { ...session, score: session.score + 25 };
+      disputeWon = true;
     } else {
       round = { ...round, errors: [...round.errors, 'dispute-wrong'] };
       disputeVerdict = `${$t('game.dispute-wrong-msg').replace('{note}', denomLabel(d.actualNote))}`;
@@ -413,6 +426,12 @@
     paused = false;
     pauseMenu = false;
     explaining = null;
+    maxStreak = 0;
+    trapCaught = false;
+    disputeWon = false;
+    tabServed = false;
+    splitServed = false;
+    badgeToast = null;
     startRound();
   }
 
@@ -444,6 +463,18 @@
       || (session.mode === 'daily'
           && fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success));
     if (bigWin) fanfare($settings.sound);
+
+    const got = newBadges({
+      mode: session.mode, finished: session.finished, stars, level,
+      maxStreak, trapCaught, disputeWon, tabServed, splitServed,
+      elapsedMs: session.elapsedMs,
+      dailyStreak: get(daily)?.streak ?? 0,
+    }, get(badges));
+    if (got.length > 0) {
+      badges.update((b) => [...b, ...got]);
+      badgeToast = got.map((id) => `🏅 ${get(t)(`badge.${id}`)}`).join('  ');
+      setTimeout(() => (badgeToast = null), 3000);
+    }
   }
 
   function doShare() {
@@ -672,6 +703,8 @@
     />
   {/if}
 
+  {#if badgeToast}<div class="flash badge-toast">{badgeToast}</div>{/if}
+
   {#if explaining}
     <ExplainerCard
       title={$t(`explain.${explaining}.title`)}
@@ -737,4 +770,5 @@
     padding: 0.75rem 1.5rem; border-radius: var(--radius);
     font-size: 1.3rem; font-weight: bold;
   }
+  .badge-toast { bottom: 12%; background: var(--accent); }
 </style>
