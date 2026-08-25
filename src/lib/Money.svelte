@@ -26,6 +26,7 @@
     position: relative; background: var(--money-color); color: var(--ink);
     font-weight: bold; font-size: 0.9rem;
     display: grid; place-items: center;
+    animation: op-pop 0.15s ease-out;
   }
   button:disabled { opacity: 0.3; }
   .coin { width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgb(0 0 0 / 0.25); }

@@ -30,7 +30,7 @@
   import { formatEuro } from '../core/money';
   import { COIN_DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
-  import { chaChing, coinClink, errorBuzz } from '../lib/sound';
+  import { chaChing, coinClink, errorBuzz, tickTock } from '../lib/sound';
   import EndOverlay from '../lib/EndOverlay.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
   import Numpad from '../lib/Numpad.svelte';
@@ -65,6 +65,7 @@
   let menuHidden = $state(false);
   let askOpen = $state(false);
   let flash = $state<string | null>(null);
+  let heartPulse = $state(false);
   let dispute = $state<Dispute | null>(null);
   let disputeOpts = $state<number[]>([]);           // fixed at dialog-open time; never roll rng in markup
   let disputeVerdict = $state<string | null>(null); // overrides the success flash once
@@ -210,8 +211,10 @@
           ? `${$t('game.change-was')} ${formatEuro(done.changeDue, symbolFirst)}`
           : `${$t('game.wrong')} ${formatEuro(done.order.totalCents, symbolFirst)}`;
     disputeVerdict = null;
-    if (failed) errorBuzz($settings.sound);
-    else chaChing($settings.sound);
+    if (failed) {
+      errorBuzz($settings.sound);
+      pulseHearts();
+    } else chaChing($settings.sound);
     session = completeRound(session, done, { orderText, ms });
     round = null;
     pile = [];
@@ -355,6 +358,12 @@
     navigator.clipboard?.writeText(text).then(() => (shareCopied = true)).catch(() => {});
   }
 
+  function pulseHearts() {
+    heartPulse = false;
+    requestAnimationFrame(() => (heartPulse = true));
+    setTimeout(() => (heartPulse = false), 600);
+  }
+
   onMount(() => {
     startRound();
     const iv = setInterval(() => {
@@ -376,6 +385,11 @@
           flash = null;
           startRound();
         }, 1000);
+        pulseHearts();
+      }
+      if (round && session.queue[0]
+          && session.queue[0].patienceMs < session.queue[0].maxPatienceMs * 0.25) {
+        tickTock($settings.sound);
       }
       if (session.finished) {
         if (!flash) finalize();
@@ -393,7 +407,7 @@
 
 <main class="game">
   <header>
-    <span class="lives">{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
+    <span class="lives" class:pulse={heartPulse}>{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
     <span>{mode === 'level' ? `${$t('game.level')} ${level}`
       : mode === 'rush' ? `${$t('game.rush')} · ${session.level}`
       : mode === 'practice' ? $t('practice.title')
@@ -403,9 +417,10 @@
 
   <div class="queue">
     {#each session.queue as c, i (c.id)}
+      {@const frac = c.patienceMs / c.maxPatienceMs}
       <div class="customer" class:active={i === 0}>
-        <span class="face">👤</span>
-        <PatienceBar frac={c.patienceMs / c.maxPatienceMs} />
+        <span class="face">{frac > 0.5 ? '😀' : frac > 0.25 ? '😐' : '😠'}</span>
+        <PatienceBar {frac} />
       </div>
     {/each}
   </div>
@@ -475,12 +490,14 @@
   }
   header { display: flex; justify-content: space-between; align-items: center; }
   .lives { color: var(--danger); }
+  .lives.pulse { animation: op-pulse 0.5s ease-in-out; }
   .queue { display: flex; gap: 0.75rem; min-height: 40px; }
   .customer { width: 64px; opacity: 0.5; }
   .customer.active { opacity: 1; }
   .face { font-size: 1.4rem; }
   .order { font-size: 1.15rem; font-style: italic; }
-  .amend { color: var(--accent); }
+  .flash { animation: op-slide-up 0.2s ease-out; }
+  .amend { color: var(--accent); animation: op-slide-up 0.3s ease-out; }
   .prompt { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: baseline; }
   .paid {
     background: var(--cream); color: var(--ink);
