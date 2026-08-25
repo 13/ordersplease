@@ -217,7 +217,7 @@
     if (vis !== null && vis > 0) {
       menuT.start(() => (menuHidden = true), vis * 1000);
     }
-    if (round) maybeExplain('tipp');
+    if (round && !explaining) maybeExplain('tipp');
   }
 
   function nextPayer() {
