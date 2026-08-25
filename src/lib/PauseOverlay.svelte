@@ -2,6 +2,7 @@
 <script lang="ts">
   import { t } from '../i18n';
   import { go } from './router';
+  import { focusFirst } from './focus';
 
   let { menu, soundOn, onresume, onrestart, ontogglesound, allowRestart = true }: {
     menu: boolean;
@@ -11,9 +12,14 @@
     ontogglesound: () => void;
     allowRestart?: boolean;
   } = $props();
+
+  let rootEl = $state<HTMLElement | null>(null);
+  $effect(() => {
+    focusFirst(rootEl);
+  });
 </script>
 
-<div class="pause" role="dialog" aria-label={$t('pause.title')}>
+<div class="pause" role="dialog" aria-label={$t('pause.title')} bind:this={rootEl}>
   <h2>{$t('pause.title')}</h2>
   {#if menu}
     <div class="menu-actions">

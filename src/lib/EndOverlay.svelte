@@ -5,6 +5,7 @@
   import { go } from './router';
   import { MAX_LEVEL } from '../core/difficulty';
   import RoundDetails from './RoundDetails.svelte';
+  import { focusFirst } from './focus';
 
   let {
     session, level, stars, wasNewHigh, onretry, onshare = null, shareLabel = '', note = null,
@@ -49,9 +50,14 @@
     }, 30);
     return () => clearInterval(iv);
   });
+
+  let rootEl = $state<HTMLElement | null>(null);
+  $effect(() => {
+    focusFirst(rootEl);
+  });
 </script>
 
-<div class="overlay">
+<div class="overlay" bind:this={rootEl}>
   {#if celebrate && !reduced}
     <div class="shower" aria-hidden="true">
       {#each rain as r (r.id)}

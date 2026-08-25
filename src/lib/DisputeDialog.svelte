@@ -1,14 +1,21 @@
 <!-- src/lib/DisputeDialog.svelte -->
 <script lang="ts">
+  import { focusFirst } from './focus';
+
   let { claimText, question, options, onanswer }: {
     claimText: string;
     question: string;
     options: { label: string; value: number }[];
     onanswer: (value: number) => void;
   } = $props();
+
+  let rootEl = $state<HTMLElement | null>(null);
+  $effect(() => {
+    focusFirst(rootEl);
+  });
 </script>
 
-<div class="dispute" role="alertdialog" aria-label={question}>
+<div class="dispute" role="alertdialog" aria-label={question} bind:this={rootEl}>
   <p class="claim">“{claimText}”</p>
   <p>{question}</p>
   <div class="choices">

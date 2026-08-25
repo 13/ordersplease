@@ -34,6 +34,7 @@
   import { formatEuro } from '../core/money';
   import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
+  import { focusFirst } from '../lib/focus';
   import { chaChing, coinClink, errorBuzz, fanfare, tickTock } from '../lib/sound';
   import { PausableTimer } from '../lib/pausable';
   import Money from '../lib/Money.svelte';
@@ -98,6 +99,7 @@
   let hasKeyboard = $state(false); // becomes true on first physical keydown → shows badges
   let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
   let payerIndex = $state(0);
+  let mainEl = $state<HTMLElement | null>(null);
   let groupBaseText = $state('');
   let disputeRoll = $state(1); // pre-rolled at payment creation; 1 = never fires
   let disputeOptRoll = $state(0);
@@ -368,6 +370,7 @@
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
       session = { ...session, score: session.score - Math.min(50, gained) };
     }
+    focusFirst(mainEl);
   }
 
   // retry keeps the same hash, so {#key $route} never remounts — reset in place
@@ -441,6 +444,7 @@
     pauseMenu = on && menu;
     const timers = [amendT, menuT, flashT, waveT];
     for (const t of timers) on ? t.pause() : t.resume();
+    if (!on) focusFirst(mainEl);
   }
 
   function onKey(e: KeyboardEvent) {
@@ -526,7 +530,7 @@
 </script>
 
 <svelte:window onkeydown={onKey} />
-<main class="game">
+<main class="game" bind:this={mainEl}>
   <header>
     <span class="lives" class:pulse={heartPulse}>{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
     <span>{mode === 'level' ? `${level} · ${$t(`level.name.${level}`)}`

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { route, go } from './lib/router';
   import Home from './routes/Home.svelte';
   import Levels from './routes/Levels.svelte';
@@ -10,6 +11,7 @@
   import { SKILL_ERROR, type Skill } from './core/difficulty';
   import { settings } from './stores/settings';
   import { progress, unlockedLevel } from './stores/progress';
+  import { focusFirst } from './lib/focus';
 
   const gameLevel = $derived.by(() => {
     const m = $route.match(/^game\/(\d+)$/);
@@ -34,6 +36,11 @@
 
   $effect(() => {
     document.documentElement.lang = $settings.locale;
+  });
+
+  $effect(() => {
+    $route; // track
+    tick().then(() => focusFirst(document.querySelector('main')));
   });
 </script>
 
