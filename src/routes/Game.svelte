@@ -18,9 +18,11 @@
   } from '../core/daily';
   import { daily } from '../stores/daily';
   import {
-    createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment,
+    createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment, markHint,
     type RoundState,
   } from '../core/round';
+  import { hintFor } from '../core/hints';
+  import { praiseKey } from '../lib/praise';
   import {
     generateOrder, generatePayment, generateUnderPayment, amendOrder, piecesTotal,
     generateTab, splitOrder, orderTotal,
@@ -94,6 +96,9 @@
   let groupBaseText = $state('');
   let disputeRoll = $state(1); // pre-rolled at payment creation; 1 = never fires
   let disputeOptRoll = $state(0);
+  let hintText = $state<string | null>(null);
+  let hintIndex = $state(0);
+  let scoreAtRoundStart = 0;
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -120,6 +125,9 @@
     amendText = null;
     pile = [];
     askOpen = false;
+    hintText = null;
+    hintIndex = 0;
+    scoreAtRoundStart = session.score;
 
     const roll = session.rng();
     const makePayment = (cents: number) =>
@@ -207,6 +215,9 @@
     disputeOptRoll = session.rng();
     pile = [];
     askOpen = false;
+    hintText = null;
+    hintIndex = 0;
+    scoreAtRoundStart = session.score;
     roundStartedAt = performance.now();
   }
 
@@ -221,22 +232,23 @@
     const ms = performance.now() - roundStartedAt;
     const failed = done.success !== true;
     stats.update((s) => recordDay(recordRound(s, done.errors, ms, failed), new Date()));
-    flash = disputeVerdict !== null
-      ? disputeVerdict
-      : !failed
-        ? $t('game.correct')
-        : done.errors.includes('change-wrong')
-          ? `${$t('game.change-was')} ${formatEuro(done.changeDue, symbolFirst)}`
-          : `${$t('game.wrong')} ${formatEuro(done.order.totalCents, symbolFirst)}`;
-    disputeVerdict = null;
     if (failed) {
       errorBuzz($settings.sound);
       pulseHearts();
     } else chaChing($settings.sound);
     session = completeRound(session, done, { orderText, ms });
+    flash = disputeVerdict !== null
+      ? disputeVerdict
+      : failed
+        ? done.errors.includes('change-wrong')
+          ? `${$t('game.change-was')} ${formatEuro(done.changeDue, symbolFirst)}`
+          : `${$t('game.wrong')} ${formatEuro(done.order.totalCents, symbolFirst)}`
+        : $t(praiseKey(session.streak));
+    disputeVerdict = null;
     round = null;
     pile = [];
     splitGroups = null;
+    hintText = null;
     amendT.clear();
     waveT.clear();
     menuT.clear();
@@ -306,6 +318,14 @@
       errorBuzz($settings.sound);
     }
   }
+  function onTipp() {
+    if (!round || dispute || paused || round.phase === 'done') return;
+    round = markHint(round);
+    hintText = hintFor(round, hintIndex, $settings.locale);
+    hintIndex += 1;
+    session = { ...session, score: Math.max(session.score - 25, scoreAtRoundStart) };
+  }
+
   function resolveDispute(chosen: number) {
     if (!dispute || !round) return;
     const d = dispute;
@@ -416,6 +436,7 @@
       else if (k === ',' || k === '.') { numpadApi?.press(','); e.preventDefault(); }
       else if (k === 'Backspace') { numpadApi?.press('Backspace'); e.preventDefault(); }
       else if (k === 'Enter') { numpadApi?.press('Enter'); e.preventDefault(); }
+      else if (k === 't' || k === 'T') { onTipp(); e.preventDefault(); }
     } else if (round.phase === 'change') {
       if (/^[0-9]$/.test(k)) {
         const idx = k === '0' ? 9 : Number(k) - 1;
@@ -424,6 +445,7 @@
       } else if (k === 'Enter') { confirmChange(); e.preventDefault(); }
       else if (k === 'a' || k === 'A') { askOpen = !askOpen; e.preventDefault(); }
       else if (k === 'n' || k === 'N') { onNotEnough(); e.preventDefault(); }
+      else if (k === 't' || k === 'T') { onTipp(); e.preventDefault(); }
     }
   }
 
@@ -494,6 +516,7 @@
   {#if round}
     <p class="order">“{paused ? '…' : orderText}”</p>
     {#if amendText}<p class="order amend">“{amendText}”</p>{/if}
+    {#if hintText}<p class="hint-line">💡 {hintText}</p>{/if}
 
     <MenuCard menu={session.menu} pricesHidden={menuHidden} {symbolFirst} />
 
@@ -503,6 +526,7 @@
       {:else}
         <p class="prompt">{$t('game.sum-prompt')}</p>
         <Numpad onsubmit={onSum} {symbolFirst} bindApi={(api) => (numpadApi = api)} />
+        <button class="tipp" onclick={onTipp}>{$t('game.tipp')} (−25)</button>
       {/if}
     {:else if round.phase === 'change'}
       <p class="prompt">
@@ -519,6 +543,7 @@
         </button>
         <button class="ask" onclick={() => (askOpen = !askOpen)}>{$t('game.ask')}</button>
         <button class="ask" onclick={onNotEnough}>{$t('game.not-enough')}</button>
+        <button class="tipp" onclick={onTipp}>{$t('game.tipp')}</button>
       </div>
       {#if askOpen}
         <div class="ask-row">
@@ -577,6 +602,8 @@
   .order { font-size: 1.15rem; font-style: italic; }
   .flash { animation: op-slide-up 0.2s ease-out; }
   .amend { color: var(--accent); animation: op-slide-up 0.3s ease-out; }
+  .tipp { background: var(--wood-light); color: var(--cream); }
+  .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
   .prompt { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: baseline; }
   .paid {
     background: var(--cream); color: var(--ink);
