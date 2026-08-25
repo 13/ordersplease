@@ -109,7 +109,7 @@
         ? `${$t('game.change-was')} ${formatEuro(done.changeDue, symbolFirst)}`
         : `${$t('game.wrong')} ${formatEuro(done.order.totalCents, symbolFirst)}`;
     beep(!failed, $settings.sound);
-    session = completeRound(session, done);
+    session = completeRound(session, done, { orderText, ms });
     round = null;
     pile = [];
     clearTimeout(amendTimer);

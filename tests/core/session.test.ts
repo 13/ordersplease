@@ -4,6 +4,10 @@ import {
 } from '$core/session';
 import { DEFAULT_MENU } from '$core/menu';
 import { createRound, submitSum, submitChange, timeoutRound } from '$core/round';
+import type { DifficultyParams } from '$core/difficulty';
+import { paramsForLevel } from '$core/difficulty';
+import { completeSubRound } from '$core/session';
+import { dailyLevelFor } from '$core/daily';
 
 function freshSession(level = 1) {
   return createSession('level', level, DEFAULT_MENU, false, 42);
@@ -65,7 +69,7 @@ describe('completeRound', () => {
   it('successful round: score up, streak up, round counted, till updated', () => {
     let s = freshSession();
     const r = winRound(s);
-    s = completeRound(s, r);
+    s = completeRound(s, r, { orderText: 'x', ms: 1000 });
     expect(s.score).toBeGreaterThan(0);
     expect(s.streak).toBe(1);
     expect(s.roundsDone).toBe(1);
@@ -79,7 +83,7 @@ describe('completeRound', () => {
       { lines: [{ item: s.menu[0], qty: 1 }], totalCents: s.menu[0].priceCents },
       [500], s.till,
     ));
-    s = completeRound(s, r);
+    s = completeRound(s, r, { orderText: 'x', ms: 1000 });
     expect(s.livesLost).toBe(1);
     expect(s.streak).toBe(0);
     expect(s.till).toEqual(tillBefore);
@@ -88,8 +92,79 @@ describe('completeRound', () => {
     let s = freshSession();
     for (let i = 0; i < s.params.ordersPerLevel; i++) {
       if (s.queue.length === 0) s = spawnCustomer(s);
-      s = completeRound(s, winRound(s));
+      s = completeRound(s, winRound(s), { orderText: 'x', ms: 1000 });
     }
     expect(s.finished).toBe('won');
+  });
+});
+
+describe('round log', () => {
+  it('completeRound appends a log entry with the gained score', () => {
+    let s = freshSession();
+    const r = winRound(s);
+    s = completeRound(s, r, { orderText: 'Two Beers, please.', ms: 3200 });
+    expect(s.roundLog.length).toBe(1);
+    expect(s.roundLog[0]).toMatchObject({
+      orderText: 'Two Beers, please.', ms: 3200, success: true, errors: [],
+    });
+    expect(s.roundLog[0].scoreGained).toBe(s.score);
+  });
+});
+
+describe('practice mode', () => {
+  function practiceSession() {
+    const override: DifficultyParams = { ...paramsForLevel(15), ordersPerLevel: 10 };
+    return createSession('practice', 15, DEFAULT_MENU, false, 5, override);
+  }
+  it('uses the override params', () => {
+    expect(practiceSession().params.ordersPerLevel).toBe(10);
+  });
+  it('never finishes as lost, finishes won after 10 rounds', () => {
+    let s = practiceSession();
+    for (let i = 0; i < 10; i++) {
+      if (s.queue.length === 0) s = spawnCustomer(s);
+      const r = timeoutRound(createRound(
+        { lines: [{ item: s.menu[0], qty: 1 }], totalCents: s.menu[0].priceCents },
+        [500], s.till,
+      ));
+      s = completeRound(s, r, { orderText: 'x', ms: 500 });
+    }
+    expect(s.livesLost).toBe(10);
+    expect(s.finished).toBe('won'); // all rounds played, session complete
+  });
+});
+
+describe('daily mode', () => {
+  it('ramps params by round index but keeps the fixed order count', () => {
+    const override = { ...paramsForLevel(dailyLevelFor(0)), ordersPerLevel: 10 };
+    let s = createSession('daily', 1, DEFAULT_MENU, false, 20260825, override);
+    const patienceBefore = s.params.patienceSeconds;
+    if (s.queue.length === 0) s = spawnCustomer(s);
+    s = completeRound(s, winRound(s), { orderText: 'x', ms: 500 });
+    expect(s.params.patienceSeconds).toBeLessThanOrEqual(patienceBefore);
+    expect(s.params).toEqual({ ...paramsForLevel(dailyLevelFor(1)), ordersPerLevel: 10 });
+  });
+});
+
+describe('walkout reporting', () => {
+  it('tickSession sets lastWalkouts', () => {
+    let s = freshSession();
+    s = tickSession(s, 1000);
+    expect(s.lastWalkouts).toBe(0);
+    s = tickSession(s, 10_000_000);
+    expect(s.lastWalkouts).toBe(1);
+  });
+});
+
+describe('completeSubRound', () => {
+  it('scores and logs without consuming the customer or the round count', () => {
+    let s = freshSession();
+    const r = winRound(s);
+    s = completeSubRound(s, r, { orderText: 'payer 1', ms: 800 });
+    expect(s.queue.length).toBe(1);
+    expect(s.roundsDone).toBe(0);
+    expect(s.score).toBeGreaterThan(0);
+    expect(s.roundLog.length).toBe(1);
+    expect(s.till).toEqual(r.till);
   });
 });

@@ -4,8 +4,9 @@ import {
 } from './difficulty';
 import { fullTill, scarceTill, type Till } from './till';
 import { mulberry32 } from './order';
-import type { RoundState } from './round';
+import type { RoundState, RoundError } from './round';
 import { scoreRound } from './scoring';
+import { dailyLevelFor } from './daily';
 
 export interface Customer { id: number; patienceMs: number; maxPatienceMs: number; }
 
@@ -13,8 +14,20 @@ export const MAX_LIVES = 3;
 const QUEUE_CAP = 3;
 const WAITING_DRAIN_RATE = 0.5;
 
+export type SessionMode = 'level' | 'rush' | 'practice' | 'daily';
+
+export interface RoundLogEntry {
+  orderText: string;
+  ms: number;
+  success: boolean;
+  errors: RoundError[];
+  scoreGained: number;
+}
+
+export interface RoundMeta { orderText: string; ms: number; }
+
 export interface SessionState {
-  mode: 'level' | 'rush';
+  mode: SessionMode;
   level: number;
   elapsedMs: number;
   menu: MenuItem[];
@@ -29,6 +42,8 @@ export interface SessionState {
   rng: () => number;
   nextCustomerId: number;
   spawnCooldownMs: number;
+  roundLog: RoundLogEntry[];
+  lastWalkouts: number;
 }
 
 function spawnIntervalMs(params: DifficultyParams): number {
@@ -41,10 +56,12 @@ function newCustomer(s: SessionState): Customer {
 }
 
 export function createSession(
-  mode: 'level' | 'rush', level: number,
+  mode: SessionMode, level: number,
   baseMenu: MenuItem[], isCustomMenu: boolean, seed: number,
+  paramsOverride?: DifficultyParams,
 ): SessionState {
-  const params = mode === 'level' ? paramsForLevel(level) : paramsForRush(0);
+  const params = paramsOverride
+    ?? (mode === 'level' ? paramsForLevel(level) : paramsForRush(0));
   const rng = mulberry32(seed);
   const till = params.scarceDenoms === 0 ? fullTill() : scarceTill(rng, params.scarceDenoms);
   const menu = isCustomMenu ? baseMenu : applyPriceStyle(baseMenu, params.priceStyle);
@@ -53,6 +70,7 @@ export function createSession(
     queue: [], livesLost: 0, score: 0, streak: 0, roundsDone: 0,
     finished: null, params, rng, nextCustomerId: 1,
     spawnCooldownMs: spawnIntervalMs(params),
+    roundLog: [], lastWalkouts: 0,
   };
   return spawnCustomer(s);
 }
@@ -67,7 +85,10 @@ export function spawnCustomer(s: SessionState): SessionState {
 }
 
 function checkLost(s: SessionState): SessionState {
-  if (s.finished === null && s.livesLost >= MAX_LIVES) return { ...s, finished: 'lost' };
+  if ((s.mode === 'level' || s.mode === 'rush')
+      && s.finished === null && s.livesLost >= MAX_LIVES) {
+    return { ...s, finished: 'lost' };
+  }
   return s;
 }
 
@@ -87,6 +108,7 @@ export function tickSession(s: SessionState, dtMs: number): SessionState {
   const walkouts = drained.length - stayed.length;
   next.queue = stayed;
   next.livesLost += walkouts;
+  next.lastWalkouts = walkouts;
   if (walkouts > 0) next.streak = 0;
   // spawn after the drain so a customer arriving this tick starts with full patience
   if (next.mode === 'rush' && next.spawnCooldownMs <= 0) {
@@ -101,15 +123,29 @@ export function patienceFrac(s: SessionState): number {
   return head ? Math.max(head.patienceMs, 0) / head.maxPatienceMs : 0;
 }
 
-export function completeRound(s: SessionState, round: RoundState): SessionState {
-  if (s.finished) return s;
-  const frac = patienceFrac(s);
-  const firstTry = round.sumTries === 0 && round.changeTries === 0;
+function scoreAndLog(
+  s: SessionState, round: RoundState, meta: RoundMeta,
+): { gained: number; entry: RoundLogEntry; firstTry: boolean; success: boolean } {
   const success = round.success === true;
+  const firstTry = round.sumTries === 0 && round.changeTries === 0;
   const gained = scoreRound({
-    success, firstTry, usedAsk: success && round.usedAsk,
-    patienceFrac: frac, streakBefore: s.streak,
+    success, firstTry,
+    usedAsk: success && round.usedAsk,
+    usedTrapCall: success && round.usedTrapCall,
+    patienceFrac: patienceFrac(s), streakBefore: s.streak,
   });
+  return {
+    gained, firstTry, success,
+    entry: {
+      orderText: meta.orderText, ms: meta.ms,
+      success, errors: round.errors, scoreGained: gained,
+    },
+  };
+}
+
+export function completeRound(s: SessionState, round: RoundState, meta: RoundMeta): SessionState {
+  if (s.finished) return s;
+  const { gained, entry, firstTry, success } = scoreAndLog(s, round, meta);
   let next: SessionState = {
     ...s,
     queue: s.queue.slice(1),
@@ -118,11 +154,33 @@ export function completeRound(s: SessionState, round: RoundState): SessionState 
     roundsDone: s.roundsDone + 1,
     livesLost: s.livesLost + (success ? 0 : 1),
     till: success ? round.till : s.till,
+    roundLog: [...s.roundLog, entry],
   };
   next = checkLost(next);
-  if (next.finished === null && next.mode === 'level'
+  if (next.finished === null && next.mode !== 'rush'
       && next.roundsDone >= next.params.ordersPerLevel) {
     next.finished = 'won';
   }
+  if (next.finished === null && next.mode === 'daily') {
+    // ramp difficulty but keep the caller's fixed order count (DAILY_ORDERS)
+    next.params = {
+      ...paramsForLevel(dailyLevelFor(next.roundsDone)),
+      ordersPerLevel: next.params.ordersPerLevel,
+    };
+  }
   return next;
+}
+
+/** Split payers before the last one: success-only — the customer stays, the
+ *  group's round is not counted yet. */
+export function completeSubRound(s: SessionState, round: RoundState, meta: RoundMeta): SessionState {
+  if (s.finished) return s;
+  const { gained, entry, firstTry, success } = scoreAndLog(s, round, meta);
+  return {
+    ...s,
+    score: s.score + gained,
+    streak: success && firstTry ? s.streak + 1 : 0,
+    till: success ? round.till : s.till,
+    roundLog: [...s.roundLog, entry],
+  };
 }
