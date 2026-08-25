@@ -6,7 +6,9 @@
   import { MAX_LEVEL } from '../core/difficulty';
   import RoundDetails from './RoundDetails.svelte';
 
-  let { session, level, stars, wasNewHigh, onretry, onshare = null, shareLabel = '' }: {
+  let {
+    session, level, stars, wasNewHigh, onretry, onshare = null, shareLabel = '', note = null,
+  }: {
     session: SessionState;
     level: number;
     stars: number;
@@ -14,6 +16,7 @@
     onretry: () => void;
     onshare?: (() => void) | null;
     shareLabel?: string;
+    note?: string | null;
   } = $props();
 
   const served = $derived(session.roundLog.filter((e) => e.success).length);
@@ -29,6 +32,7 @@
   {#if showAccuracy}
     <p>{$t('result.accuracy')}: {served}/{session.roundLog.length}</p>
   {/if}
+  {#if note}<p class="note">{note}</p>{/if}
   {#if session.mode === 'rush' && wasNewHigh}
     <p>{$t('result.highscore')}</p>
   {/if}
@@ -54,6 +58,7 @@
     gap: 0.75rem; text-align: center; padding: 1rem;
   }
   .stars { font-size: 2.2rem; color: var(--accent); }
+  .note { color: var(--accent); font-size: 0.9rem; }
   .overlay-actions { display: flex; flex-direction: column; gap: 0.5rem; width: 240px; }
   .overlay-actions button { background: var(--accent); color: var(--ink); font-size: 1.1rem; }
 </style>

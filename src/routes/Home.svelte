@@ -1,6 +1,10 @@
 <script lang="ts">
   import { t } from '../i18n';
   import { go } from '../lib/router';
+  import { daily } from '../stores/daily';
+  import { dailyKey } from '../core/daily';
+
+  const doneToday = $derived($daily?.date === dailyKey(new Date()));
 </script>
 
 <main class="home">
@@ -8,6 +12,7 @@
   <button onclick={() => go('levels')}>{$t('home.play')}</button>
   <button onclick={() => go('rush')}>{$t('home.rush')}</button>
   <button onclick={() => go('practice')}>{$t('home.practice')}</button>
+  <button onclick={() => go('daily')}>{$t('home.daily')}{doneToday ? ' ✓' : ''}</button>
   <button class="minor" onclick={() => go('stats')}>{$t('home.stats')}</button>
   <button class="minor" onclick={() => go('menu')}>{$t('home.menu')}</button>
   <button class="minor" onclick={() => go('settings')}>{$t('home.settings')}</button>

@@ -37,6 +37,8 @@
     <Game mode="practice" skill={practiceSkill} />
   {:else if $route === 'practice'}
     <Practice />
+  {:else if $route === 'daily'}
+    <Game mode="daily" />
   {:else}
     <Home />
   {/if}

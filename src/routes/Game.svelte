@@ -11,7 +11,11 @@
     createSession, tickSession, completeRound, completeSubRound, spawnCustomer, MAX_LIVES,
   } from '../core/session';
   import type { SessionMode } from '../core/session';
-  import { practiceParams, type Skill } from '../core/difficulty';
+  import { practiceParams, paramsForLevel, type Skill } from '../core/difficulty';
+  import {
+    dailySeed, dailyLevelFor, DAILY_ORDERS, isRanked, nextDailyRecord, shareText,
+  } from '../core/daily';
+  import { daily } from '../stores/daily';
   import {
     createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment,
     type RoundState,
@@ -39,11 +43,18 @@
     mode: SessionMode; level?: number; skill?: Skill;
   } = $props();
 
+  let rankedRun = $state(false);
+  let shareCopied = $state(false);
   function newSession() {
-    const override = mode === 'practice' ? practiceParams(skill) : undefined;
+    const override = mode === 'practice'
+      ? practiceParams(skill)
+      : mode === 'daily'
+        ? { ...paramsForLevel(dailyLevelFor(0)), ordersPerLevel: DAILY_ORDERS }
+        : undefined;
+    const seed = mode === 'daily' ? dailySeed(new Date()) : Date.now() % 2 ** 31;
+    rankedRun = mode === 'daily' ? isRanked(get(daily), new Date()) : false;
     return createSession(
-      mode, level, get(activeMenu), get(settings).useCustomMenu,
-      Date.now() % 2 ** 31, override,
+      mode, level, get(activeMenu), get(settings).useCustomMenu, seed, override,
     );
   }
   let session = $state(newSession());
@@ -307,6 +318,7 @@
     disputeVerdict = null;
     finalized = false;
     wasNewHigh = false;
+    shareCopied = false;
     pile = [];
     splitGroups = null;
     startRound();
@@ -328,6 +340,19 @@
         stars: { ...p.stars, [level]: Math.max(p.stars[level] ?? 0, stars) },
       }));
     }
+    if (session.mode === 'daily') {
+      const perfect = session.roundLog.length >= DAILY_ORDERS
+        && session.roundLog.every((e) => e.success);
+      daily.update((prev) => nextDailyRecord(prev, new Date(), session.score, perfect));
+    }
+  }
+
+  function doShare() {
+    const served = session.roundLog.filter((e) => e.success).length;
+    const text = shareText(
+      new Date(), session.score, served, DAILY_ORDERS, get(daily)?.streak ?? 1,
+    );
+    navigator.clipboard?.writeText(text).then(() => (shareCopied = true)).catch(() => {});
   }
 
   onMount(() => {
@@ -425,7 +450,12 @@
   {#if flash}<div class="flash">{flash}</div>{/if}
 
   {#if session.finished && finalized}
-    <EndOverlay {session} {level} {stars} {wasNewHigh} onretry={restart} />
+    <EndOverlay
+      {session} {level} {stars} {wasNewHigh} onretry={restart}
+      onshare={mode === 'daily' ? doShare : null}
+      shareLabel={shareCopied ? $t('daily.copied') : $t('daily.share')}
+      note={mode === 'daily' && !rankedRun ? $t('daily.unranked') : null}
+    />
   {/if}
 
   {#if dispute}
