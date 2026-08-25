@@ -36,17 +36,50 @@ describe('menu', () => {
   });
 });
 
-import { localizedDefaultMenu } from '$core/menu';
+import { localizedDefaultMenu, menuForLevel, migrateMenuItems } from '$core/menu';
 
 describe('localizedDefaultMenu', () => {
   it('DE names are translated, ids and prices identical', () => {
     const de = localizedDefaultMenu('de');
     const en = localizedDefaultMenu('en');
-    expect(de.map((m) => m.name)).toEqual(['Bier', 'Veneziano', 'Wasser', 'Cola', 'Wein', 'Kaffee']);
+    expect(de.map((m) => m.name)).toEqual(['Bier', 'Veneziano', 'Wasser', 'Cola', 'Wein', 'Kaffee', 'Hugo', 'Hefe', 'Schnaps', 'Wurst', 'Hähnchen', 'Schnitzel']);
     expect(de.map((m) => m.id)).toEqual(en.map((m) => m.id));
     expect(de.map((m) => m.priceCents)).toEqual(en.map((m) => m.priceCents));
   });
   it('EN equals DEFAULT_MENU', () => {
     expect(localizedDefaultMenu('en')).toEqual(DEFAULT_MENU);
+  });
+});
+
+describe('round-4 menu', () => {
+  it('default menu has 12 items with the spec prices and categories', () => {
+    const byId = Object.fromEntries(DEFAULT_MENU.map((m) => [m.id, m]));
+    expect(DEFAULT_MENU.length).toBe(12);
+    expect(byId['hugo']).toMatchObject({ priceCents: 450, category: 'drink' });
+    expect(byId['hefe']).toMatchObject({ name: 'Wheat Beer', priceCents: 420, category: 'drink' });
+    expect(byId['schnaps']).toMatchObject({ name: 'Schnapps', priceCents: 300 });
+    expect(byId['wurst']).toMatchObject({ name: 'Sausage', priceCents: 350, category: 'food' });
+    expect(byId['haehnchen']).toMatchObject({ priceCents: 850, category: 'food' });
+    expect(byId['schnitzel']).toMatchObject({ priceCents: 1050, category: 'food' });
+  });
+  it('DE names for the new items', () => {
+    const de = Object.fromEntries(localizedDefaultMenu('de').map((m) => [m.id, m.name]));
+    expect(de['hefe']).toBe('Hefe');
+    expect(de['schnaps']).toBe('Schnaps');
+    expect(de['wurst']).toBe('Wurst');
+    expect(de['haehnchen']).toBe('Hähnchen');
+    expect(de['schnitzel']).toBe('Schnitzel');
+  });
+  it('menuForLevel gates food at level 10', () => {
+    expect(menuForLevel(DEFAULT_MENU, 9).every((m) => m.category === 'drink')).toBe(true);
+    expect(menuForLevel(DEFAULT_MENU, 9).length).toBe(9);
+    expect(menuForLevel(DEFAULT_MENU, 10).length).toBe(12);
+  });
+  it('migrateMenuItems rounds prices to 10 and defaults category, idempotently', () => {
+    const legacy = [{ id: 'x', name: 'X', priceCents: 435 }];
+    const once = migrateMenuItems(legacy);
+    expect(once[0]).toMatchObject({ priceCents: 440, category: 'drink' });
+    expect(migrateMenuItems(once)).toEqual(once);
+    expect(migrateMenuItems([{ id: 'y', name: 'Y', priceCents: 4 }])[0].priceCents).toBe(10);
   });
 });

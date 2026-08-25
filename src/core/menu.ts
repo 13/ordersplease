@@ -4,17 +4,24 @@ export interface MenuItem {
   id: string;
   name: string;
   priceCents: Cents;
+  category?: 'drink' | 'food';
 }
 
 export type PriceStyle = 'round' | 'half' | 'tens' | 'any';
 
 export const DEFAULT_MENU: MenuItem[] = [
-  { id: 'beer', name: 'Beer', priceCents: 400 },
-  { id: 'veneziano', name: 'Veneziano', priceCents: 500 },
-  { id: 'water', name: 'Water', priceCents: 250 },
-  { id: 'cola', name: 'Cola', priceCents: 300 },
-  { id: 'wine', name: 'Wine', priceCents: 450 },
-  { id: 'coffee', name: 'Coffee', priceCents: 200 },
+  { id: 'beer', name: 'Beer', priceCents: 400, category: 'drink' },
+  { id: 'veneziano', name: 'Veneziano', priceCents: 500, category: 'drink' },
+  { id: 'water', name: 'Water', priceCents: 250, category: 'drink' },
+  { id: 'cola', name: 'Cola', priceCents: 300, category: 'drink' },
+  { id: 'wine', name: 'Wine', priceCents: 450, category: 'drink' },
+  { id: 'coffee', name: 'Coffee', priceCents: 200, category: 'drink' },
+  { id: 'hugo', name: 'Hugo', priceCents: 450, category: 'drink' },
+  { id: 'hefe', name: 'Wheat Beer', priceCents: 420, category: 'drink' },
+  { id: 'schnaps', name: 'Schnapps', priceCents: 300, category: 'drink' },
+  { id: 'wurst', name: 'Sausage', priceCents: 350, category: 'food' },
+  { id: 'haehnchen', name: 'Roast Chicken', priceCents: 850, category: 'food' },
+  { id: 'schnitzel', name: 'Schnitzel', priceCents: 1050, category: 'food' },
 ];
 
 export function validateItem(name: string, priceCents: number): string | null {
@@ -39,6 +46,8 @@ export function applyPriceStyle(menu: MenuItem[], style: PriceStyle): MenuItem[]
 const DE_NAMES: Record<string, string> = {
   beer: 'Bier', veneziano: 'Veneziano', water: 'Wasser',
   cola: 'Cola', wine: 'Wein', coffee: 'Kaffee',
+  hugo: 'Hugo', hefe: 'Hefe', schnaps: 'Schnaps',
+  wurst: 'Wurst', haehnchen: 'Hähnchen', schnitzel: 'Schnitzel',
 };
 
 /** Default menu with localized display names; ids, prices, and order are
@@ -46,4 +55,19 @@ const DE_NAMES: Record<string, string> = {
 export function localizedDefaultMenu(locale: 'en' | 'de'): MenuItem[] {
   if (locale === 'en') return DEFAULT_MENU.map((m) => ({ ...m }));
   return DEFAULT_MENU.map((m) => ({ ...m, name: DE_NAMES[m.id] ?? m.name }));
+}
+
+/** Food joins the bar from level 10; below that, drinks only. */
+export function menuForLevel(menu: MenuItem[], level: number): MenuItem[] {
+  return level >= 10 ? menu : menu.filter((m) => m.category !== 'food');
+}
+
+/** Legacy stored menus: default category, snap prices to the 10c grid. Idempotent. */
+export function migrateMenuItems(items: MenuItem[]): MenuItem[] {
+  return items.map((m) => ({
+    id: m.id,
+    name: m.name,
+    priceCents: Math.max(10, Math.round(m.priceCents / 10) * 10),
+    category: m.category ?? 'drink',
+  }));
 }
