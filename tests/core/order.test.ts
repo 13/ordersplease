@@ -51,7 +51,7 @@ describe('generatePayment', () => {
     const rng = mulberry32(11);
     for (const style of ['exact-or-round', 'round', 'awkward'] as const) {
       for (let i = 0; i < 50; i++) {
-        const total = 5 * (1 + Math.floor(rng() * 400)); // 0,05..20,00
+        const total = 5 * (1 + Math.floor(rng() * 2000)); // 0,05..100,00
         const pieces = generatePayment(total, style, rng);
         expect(piecesTotal(pieces)).toBeGreaterThanOrEqual(total);
       }
@@ -63,6 +63,11 @@ describe('generatePayment', () => {
       const pieces = generatePayment(430, 'round', rng);
       expect(pieces.every((p) => p >= 500)).toBe(true);
     }
+  });
+  it('round style at exact note totals pays that single note', () => {
+    const rng = mulberry32(13);
+    expect(generatePayment(5000, 'round', rng)).toEqual([5000]);
+    expect(generatePayment(500, 'round', rng)).toEqual([500]);
   });
   it('awkward style adds at least one coin on top of a note', () => {
     const rng = mulberry32(9);

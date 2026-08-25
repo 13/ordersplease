@@ -58,12 +58,12 @@ function roundNotes(amount: Cents): Denom[] {
   const pieces: Denom[] = [];
   let remaining = amount;
   for (const n of NOTE_DENOMS) {
-    while (remaining > n) {
+    while (remaining >= n) {
       pieces.push(n);
       remaining -= n;
     }
   }
-  pieces.push(NOTE_DENOMS[NOTE_DENOMS.length - 1] <= remaining ? smallestNoteAtLeast(remaining) : 500);
+  if (remaining > 0) pieces.push(smallestNoteAtLeast(remaining));
   return pieces;
 }
 
