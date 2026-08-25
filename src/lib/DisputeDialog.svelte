@@ -19,8 +19,8 @@
   <p class="claim">“{claimText}”</p>
   <p>{question}</p>
   <div class="choices">
-    {#each options as o (o.value)}
-      <button onclick={() => onanswer(o.value)}>{o.label}</button>
+    {#each options as o, i (o.value)}
+      <button onclick={() => onanswer(o.value)}><kbd>{i + 1}</kbd> {o.label}</button>
     {/each}
   </div>
 </div>
@@ -37,4 +37,5 @@
     background: var(--cream); color: var(--ink);
     font-size: 1.2rem; font-weight: bold; padding: 0.75rem 1.5rem;
   }
+  .choices kbd { background: var(--wood); color: var(--cream); border-radius: 3px; padding: 0 4px; font-size: 0.7rem; margin-right: 4px; }
 </style>

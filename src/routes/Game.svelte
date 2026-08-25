@@ -459,6 +459,11 @@
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
     const k = e.key;
     if (k === 'Escape') {
+      if (askOpen) {
+        askOpen = false;
+        e.preventDefault();
+        return;
+      }
       if (paused) setPaused(false);
       else setPaused(true, true);
       e.preventDefault();
@@ -471,7 +476,15 @@
       return;
     }
     if (paused) return; // overlay blocks taps; keys must freeze too
-    if (session.finished || dispute) return;
+    if (session.finished) return;
+    if (dispute) {
+      if (k === '1' || k === '2') {
+        const v = disputeOpts[Number(k) - 1];
+        if (v !== undefined) resolveDispute(v);
+        e.preventDefault();
+      }
+      return;
+    }
     hasKeyboard = true;
     if (!round) return;
     if (round.phase === 'sum' && !numpadLocked) {
@@ -481,6 +494,11 @@
       else if (k === 'Enter') { numpadApi?.press('Enter'); e.preventDefault(); }
       else if (k === 't' || k === 'T') { onTipp(); e.preventDefault(); }
     } else if (round.phase === 'change') {
+      if (askOpen && /^[1-5]$/.test(k)) {
+        onAsk(COIN_DENOMS[Number(k) - 1]);
+        e.preventDefault();
+        return;
+      }
       if (/^[0-9]$/.test(k)) {
         if (round.changeDue === 0) return; // Finish rounds: till is disabled for keys too
         if (k === '0') return; // only 9 denominations
@@ -585,8 +603,10 @@
           <ChangePile {pile} showTotal={session.params.showPileTotal} onreturn={ret} />
           {#if askOpen}
             <div class="ask-row">
-              {#each COIN_DENOMS as d (d)}
-                <button onclick={() => onAsk(d)}>{$t('game.ask-for')} {denomLabel(d)}?</button>
+              {#each COIN_DENOMS as d, i (d)}
+                <button onclick={() => onAsk(d)}>
+                  <kbd>{i + 1}</kbd> {$t('game.ask-for')} {denomLabel(d)}?
+                </button>
               {/each}
             </div>
           {/if}
@@ -668,6 +688,7 @@
   .ask { background: var(--accent); color: var(--ink); }
   .ask-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .ask-row button { background: var(--wood-light); color: var(--cream); }
+  .ask-row kbd { background: var(--cream); color: var(--ink); border-radius: 3px; padding: 0 4px; font-size: 0.7rem; margin-right: 2px; }
   .flash {
     position: fixed; inset: auto 0 30% 0; margin: 0 auto; width: fit-content;
     background: var(--cream); color: var(--ink);
