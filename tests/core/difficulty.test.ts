@@ -5,14 +5,15 @@ describe('difficulty', () => {
   it('level 1 matches spec anchors', () => {
     const p = paramsForLevel(1);
     expect(p.itemsMin).toBe(1);
-    expect(p.itemsMax).toBe(1);
-    expect(p.priceStyle).toBe('round');
+    expect(p.itemsMax).toBe(2);
+    expect(p.priceStyle).toBe('half');
     expect(p.paymentStyle).toBe('exact-or-round');
-    expect(p.patienceSeconds).toBe(45);
+    expect(p.patienceSeconds).toBe(35);
     expect(p.menuVisibleSeconds).toBeNull();
     expect(p.scarceDenoms).toBe(0);
     expect(p.midOrderChangeProb).toBe(0);
     expect(p.showPileTotal).toBe(true);
+    expect(p.ordersPerLevel).toBe(6);
   });
   it('level 30 matches spec anchors', () => {
     const p = paramsForLevel(MAX_LEVEL);
@@ -48,14 +49,18 @@ describe('round-2 probability rows', () => {
     expect(p.splitProb).toBeCloseTo(0.2);
   });
   it('is exactly zero strictly below each entry level', () => {
-    expect(paramsForLevel(11).underpayProb).toBe(0);
-    expect(paramsForLevel(12).underpayProb).toBeGreaterThan(0);
-    expect(paramsForLevel(17).disputeProb).toBe(0);
-    expect(paramsForLevel(18).disputeProb).toBeGreaterThan(0);
-    expect(paramsForLevel(14).tabProb).toBe(0);
-    expect(paramsForLevel(15).tabProb).toBeGreaterThan(0);
-    expect(paramsForLevel(21).splitProb).toBe(0);
-    expect(paramsForLevel(22).splitProb).toBeGreaterThan(0);
+    expect(paramsForLevel(7).underpayProb).toBe(0);
+    expect(paramsForLevel(8).underpayProb).toBeGreaterThan(0);
+    expect(paramsForLevel(11).disputeProb).toBe(0);
+    expect(paramsForLevel(12).disputeProb).toBeGreaterThan(0);
+    expect(paramsForLevel(9).tabProb).toBe(0);
+    expect(paramsForLevel(10).tabProb).toBeGreaterThan(0);
+    expect(paramsForLevel(14).splitProb).toBe(0);
+    expect(paramsForLevel(15).splitProb).toBeGreaterThan(0);
+  });
+  it('mid-game arrives earlier than before', () => {
+    expect(paramsForLevel(8).patienceSeconds).toBe(28);
+    expect(paramsForLevel(8).ordersPerLevel).toBe(8);
   });
   it('level 1 has all four at zero', () => {
     const p = paramsForLevel(1);

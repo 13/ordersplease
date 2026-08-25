@@ -31,7 +31,7 @@ describe('createSession', () => {
     const s = freshSession();
     expect(s.queue.length).toBe(1);
     expect(s.till[5]).toBeGreaterThan(0);
-    for (const m of s.menu) expect(m.priceCents % 100).toBe(0);
+    for (const m of s.menu) expect(m.priceCents % 50).toBe(0);
   });
   it('custom menu prices untouched', () => {
     const s = createSession('level', 1, [{ id: 'x', name: 'X', priceCents: 435 }], true, 1);
