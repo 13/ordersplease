@@ -71,6 +71,7 @@ export function submitSum(s: RoundState, cents: number): RoundState {
 }
 
 function failChange(s: RoundState): RoundState {
+  if (isUnderpaid(s)) return fail(s, ['trap-missed']);
   const errors: RoundError[] = ['change-wrong'];
   if (!s.usedAsk && !canMakeChange(s.till, s.paymentCents - s.order.totalCents))
     errors.push('shortage-missed');
@@ -120,6 +121,7 @@ export function submitChange(s: RoundState, pile: Denom[]): RoundState {
 
 export function askCustomer(s: RoundState, denom: Denom): RoundState {
   if (s.phase !== 'change') return s;
+  if (isUnderpaid(s)) return bumpChangeTry(s); // underpayment must be challenged, not asked around
   if (s.usedAsk) return bumpChangeTry(s); // one ask per round — keeps the asked-coin reconstruction in submitChange sound
   if (askOptions(s.till, s.changeDue).includes(denom)) {
     return {

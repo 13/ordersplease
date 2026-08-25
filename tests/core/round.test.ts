@@ -135,6 +135,16 @@ describe('payment traps', () => {
     expect(s.success).toBe(false);
     expect(s.errors).toEqual(['trap-missed']);
   });
+  it('asking during an underpaid round burns a change try, never cures the trap', () => {
+    let s = createRound(order2beer, [500, 200], fullTill()); // 7,00 for 8,00 due
+    s = submitSum(s, 800);
+    s = askCustomer(s, 100); // would make changeDue 0 — must be rejected
+    expect(s.usedAsk).toBe(false);
+    expect(s.changeTries).toBe(1);
+    s = askCustomer(s, 100);
+    expect(s.success).toBe(false);
+    expect(s.errors).toEqual(['trap-missed']);
+  });
 });
 
 describe('round kinds', () => {

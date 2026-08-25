@@ -33,4 +33,10 @@ describe('scoring', () => {
       patienceFrac: 1, streakBefore: 0,
     })).toBe(500);
   });
+  it('ask and trap bonuses stack to +100', () => {
+    expect(scoreRound({
+      success: true, firstTry: true, usedAsk: true, usedTrapCall: true,
+      patienceFrac: 1, streakBefore: 0,
+    })).toBe(550);
+  });
 });
