@@ -30,3 +30,18 @@ describe('menu', () => {
     expect(applyPriceStyle(menu, 'round')[0].priceCents).toBe(100);
   });
 });
+
+import { localizedDefaultMenu } from '$core/menu';
+
+describe('localizedDefaultMenu', () => {
+  it('DE names are translated, ids and prices identical', () => {
+    const de = localizedDefaultMenu('de');
+    const en = localizedDefaultMenu('en');
+    expect(de.map((m) => m.name)).toEqual(['Bier', 'Veneziano', 'Wasser', 'Cola', 'Wein', 'Kaffee']);
+    expect(de.map((m) => m.id)).toEqual(en.map((m) => m.id));
+    expect(de.map((m) => m.priceCents)).toEqual(en.map((m) => m.priceCents));
+  });
+  it('EN equals DEFAULT_MENU', () => {
+    expect(localizedDefaultMenu('en')).toEqual(DEFAULT_MENU);
+  });
+});

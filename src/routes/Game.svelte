@@ -4,7 +4,7 @@
   import { get } from 'svelte/store';
   import { settings } from '../stores/settings';
   import { activeMenu } from '../stores/menu';
-  import { DEFAULT_MENU } from '../core/menu';
+  import { localizedDefaultMenu } from '../core/menu';
   import { stats, recordRound, recordDay } from '../stores/stats';
   import { progress } from '../stores/progress';
   import { t } from '../i18n';
@@ -57,7 +57,7 @@
     const isDaily = mode === 'daily';
     return createSession(
       mode, level,
-      isDaily ? DEFAULT_MENU : get(activeMenu),
+      isDaily ? localizedDefaultMenu(get(settings).locale) : get(activeMenu),
       isDaily ? false : get(settings).useCustomMenu,
       seed, override,
     );

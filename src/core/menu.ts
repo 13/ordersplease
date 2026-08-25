@@ -35,3 +35,15 @@ export function applyPriceStyle(menu: MenuItem[], style: PriceStyle): MenuItem[]
     priceCents: Math.max(step, Math.round(m.priceCents / step) * step),
   }));
 }
+
+const DE_NAMES: Record<string, string> = {
+  beer: 'Bier', veneziano: 'Veneziano', water: 'Wasser',
+  cola: 'Cola', wine: 'Wein', coffee: 'Kaffee',
+};
+
+/** Default menu with localized display names; ids, prices, and order are
+ *  identical across locales so seeded generation stays deterministic. */
+export function localizedDefaultMenu(locale: 'en' | 'de'): MenuItem[] {
+  if (locale === 'en') return DEFAULT_MENU.map((m) => ({ ...m }));
+  return DEFAULT_MENU.map((m) => ({ ...m, name: DE_NAMES[m.id] ?? m.name }));
+}

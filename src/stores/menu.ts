@@ -1,6 +1,6 @@
 import { derived } from 'svelte/store';
 import { persisted } from './persisted';
-import { DEFAULT_MENU, type MenuItem } from '$core/menu';
+import { DEFAULT_MENU, localizedDefaultMenu, type MenuItem } from '../core/menu';
 import { settings } from './settings';
 
 export const customMenu = persisted<MenuItem[]>(
@@ -9,5 +9,5 @@ export const customMenu = persisted<MenuItem[]>(
 );
 
 export const activeMenu = derived([settings, customMenu], ([$s, $c]) =>
-  $s.useCustomMenu && $c.length > 0 ? $c : DEFAULT_MENU,
+  $s.useCustomMenu && $c.length > 0 ? $c : localizedDefaultMenu($s.locale),
 );
