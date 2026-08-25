@@ -86,6 +86,7 @@ export function submitChange(s: RoundState, pile: Denom[]): RoundState {
 
 export function askCustomer(s: RoundState, denom: Denom): RoundState {
   if (s.phase !== 'change') return s;
+  if (s.usedAsk) return bumpChangeTry(s); // one ask per round — keeps the asked-coin reconstruction in submitChange sound
   if (askOptions(s.till, s.changeDue).includes(denom)) {
     return {
       ...s,

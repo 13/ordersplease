@@ -91,6 +91,16 @@ describe('change failures and shortage', () => {
     expect(s.usedAsk).toBe(false);
     expect(s.changeTries).toBe(1);
   });
+  it('second ask is rejected and burns a change try', () => {
+    const till = { ...fullTill(), 100: 0, 50: 0, 20: 0, 10: 0, 5: 0 };
+    let s = createRound(order2beer, [500, 500, 100], till);
+    s = submitSum(s, 800);
+    s = askCustomer(s, 100); // valid first ask
+    expect(s.usedAsk).toBe(true);
+    s = askCustomer(s, 100); // second ask must be rejected
+    expect(s.changeDue).toBe(400); // unchanged
+    expect(s.changeTries).toBe(1);
+  });
 });
 
 describe('timeout', () => {
