@@ -1,0 +1,29 @@
+:root {
+  --wood: #2b1d12;
+  --wood-light: #4a3320;
+  --cream: #f5ecd7;
+  --ink: #2a2118;
+  --accent: #d99a2b;
+  --danger: #c0392b;
+  --ok: #2e7d4f;
+  --radius: 12px;
+  font-family: system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--wood);
+  color: var(--cream);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+button {
+  font: inherit;
+  min-width: 48px;
+  min-height: 48px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
