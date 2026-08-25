@@ -5,6 +5,9 @@
   import type { RoundError } from '../core/round';
   import { BADGE_IDS } from '../core/badges';
   import { badges } from '../stores/badges';
+  import { history, localDayKey, type DayEntry } from '../stores/history';
+  import { formatEuro } from '../core/money';
+  import { settings } from '../stores/settings';
 
   const ERROR_KEYS: RoundError[] = [
     'sum-wrong', 'change-wrong', 'shortage-missed', 'parse-wrong', 'timeout',
@@ -21,6 +24,20 @@
     return max[1] > 0 ? max[0] : null;
   });
   const maxCount = $derived(Math.max(1, ...ERROR_KEYS.map((k) => $stats.errors[k] ?? 0)));
+
+  const days = $derived.by(() => {
+    const out: { key: string; entry: DayEntry | null }[] = [];
+    const d = new Date();
+    d.setDate(d.getDate() - 13);
+    for (let i = 0; i < 14; i++) {
+      const key = localDayKey(d);
+      out.push({ key, entry: $history[key] ?? null });
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  });
+  const maxRounds = $derived(Math.max(1, ...days.map((x) => x.entry?.rounds ?? 0)));
+  const hasHistory = $derived(days.some((x) => x.entry));
 </script>
 
 <main class="stats">
@@ -31,7 +48,23 @@
     <div><dt>{$t('stats.avg')}</dt><dd>{avgSeconds}</dd></div>
     <div><dt>{$t('stats.streak')}</dt><dd>{streak} 🔥</dd></div>
     <div><dt>{$t('stats.rush-high')}</dt><dd>{$stats.rushHigh}</dd></div>
+    <div><dt>{$t('stats.tips')}</dt><dd>{formatEuro($stats.tipsEarnedCents ?? 0, $settings.symbolFirst)}</dd></div>
   </dl>
+
+  {#if hasHistory}
+    <h3>{$t('stats.history')}</h3>
+    <svg class="chart" viewBox="0 0 280 84" role="img" aria-label={$t('stats.history')}>
+      {#each days as { key, entry }, i (key)}
+        {#if entry}
+          {@const h = (entry.rounds / maxRounds) * 60}
+          <rect x={i * 20 + 3} y={70 - h} width="14" height={h} rx="2" class="bar-r" />
+          {@const acc = entry.rounds > 0 ? entry.correct / entry.rounds : 0}
+          <circle cx={i * 20 + 10} cy={70 - acc * 60} r="2.5" class="dot" />
+        {/if}
+        <text x={i * 20 + 10} y="80" class="lbl">{key.slice(8)}</text>
+      {/each}
+    </svg>
+  {/if}
 
   <h3>{$t('stats.errors')}</h3>
   <ul>
@@ -86,4 +119,8 @@
   }
   .badge.locked { opacity: 0.45; }
   .icon { font-size: 1.1rem; }
+  .chart { width: 100%; height: auto; background: var(--wood-light); border-radius: var(--radius); }
+  .bar-r { fill: var(--accent); opacity: 0.55; }
+  .dot { fill: var(--cream); }
+  .lbl { fill: var(--cream); opacity: 0.6; font-size: 6px; text-anchor: middle; }
 </style>

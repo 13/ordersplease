@@ -80,6 +80,8 @@ export default {
   'stats.err.tab-wrong': 'Tabs',
   'stats.err.split-wrong': 'Split bills',
   'stats.train': 'Train it',
+  'stats.history': 'Last 14 days',
+  'stats.tips': 'Tips earned',
   'stats.badges': 'Achievements',
   'badge.first-win': 'First shift survived',
   'badge.three-star': 'Three stars',

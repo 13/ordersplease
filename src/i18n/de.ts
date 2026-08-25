@@ -80,6 +80,8 @@ export default {
   'stats.err.tab-wrong': 'Deckel',
   'stats.err.split-wrong': 'Getrennte Rechnung',
   'stats.train': 'Üben',
+  'stats.history': 'Letzte 14 Tage',
+  'stats.tips': 'Trinkgeld verdient',
   'stats.badges': 'Erfolge',
   'badge.first-win': 'Erste Schicht geschafft',
   'badge.three-star': 'Drei Sterne',
