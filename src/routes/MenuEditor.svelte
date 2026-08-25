@@ -58,7 +58,7 @@
         >
           {item.category === 'food' ? '🍽' : '🍺'}
         </button>
-        <button class="del" onclick={() => remove(item.id)}>✕</button>
+        <button class="del" onclick={() => remove(item.id)} aria-label={$t('menu.delete-item')}>✕</button>
       </li>
     {/each}
   </ul>

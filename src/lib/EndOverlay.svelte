@@ -35,7 +35,7 @@
 
   let displayScore = $state(0);
   $effect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       displayScore = session.score;
       return;
     }
@@ -57,7 +57,7 @@
   });
 </script>
 
-<div class="overlay">
+<div class="overlay" role="dialog" aria-label={$t(session.finished === 'won' ? 'result.won' : 'result.lost')}>
   {#if celebrate && !reduced}
     <div class="shower" aria-hidden="true">
       {#each rain as r (r.id)}

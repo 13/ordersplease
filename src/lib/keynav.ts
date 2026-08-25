@@ -27,6 +27,7 @@ export function nextIndex(
   for (let j = current + dir; j >= 0 && j < n; j += dir) {
     if (enabled[j]) clamp = j;
   }
+  // clamp === current is unreachable (loop starts at current+dir) — kept as a guard
   return clamp === current ? null : clamp;
 }
 

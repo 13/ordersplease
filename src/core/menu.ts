@@ -65,8 +65,7 @@ export function menuForLevel(menu: MenuItem[], level: number): MenuItem[] {
 /** Legacy stored menus: default category, snap prices to the 10c grid. Idempotent. */
 export function migrateMenuItems(items: MenuItem[]): MenuItem[] {
   return items.map((m) => ({
-    id: m.id,
-    name: m.name,
+    ...m,
     priceCents: Math.max(10, Math.round(m.priceCents / 10) * 10),
     category: m.category ?? 'drink',
   }));
