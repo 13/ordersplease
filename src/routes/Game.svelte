@@ -457,10 +457,12 @@
           <span class="paid">{denomLabel(p)}</span>
         {/each}
       </p>
-      <TillGrid till={tillView} ontake={take} />
+      <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} />
       <ChangePile {pile} showTotal={session.params.showPileTotal} onreturn={ret} />
       <div class="actions">
-        <button class="confirm" onclick={confirmChange}>{$t('game.confirm')}</button>
+        <button class="confirm" onclick={confirmChange}>
+          {round.changeDue === 0 ? $t('game.finish') : $t('game.confirm')}
+        </button>
         <button class="ask" onclick={() => (askOpen = !askOpen)}>{$t('game.ask')}</button>
         <button class="ask" onclick={onNotEnough}>{$t('game.not-enough')}</button>
       </div>

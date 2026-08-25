@@ -33,3 +33,21 @@ describe('parseEuro', () => {
     expect(parseEuro('4,555')).toBeNull();
   });
 });
+
+import { parseEntry } from '$core/money';
+
+describe('parseEntry (euros-first)', () => {
+  it('bare number is euros', () => {
+    expect(parseEntry('5')).toBe(500);
+    expect(parseEntry('12')).toBe(1200);
+  });
+  it('comma starts cents, padded to two digits', () => {
+    expect(parseEntry('4,5')).toBe(450);
+    expect(parseEntry('4,50')).toBe(450);
+    expect(parseEntry('0,05')).toBe(5);
+    expect(parseEntry('7,')).toBe(700);
+  });
+  it('empty is zero', () => {
+    expect(parseEntry('')).toBe(0);
+  });
+});

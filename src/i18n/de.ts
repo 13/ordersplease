@@ -14,6 +14,7 @@ export default {
   'game.sum-prompt': 'Was kostet das?',
   'game.pays': 'Gast zahlt',
   'game.confirm': 'Wechselgeld geben',
+  'game.finish': 'Fertig',
   'game.ask': 'Gast fragen',
   'game.ask-for': 'Haben Sie',
   'game.walkout': 'Gast ist gegangen!',

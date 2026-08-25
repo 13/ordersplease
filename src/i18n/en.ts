@@ -14,6 +14,7 @@ export default {
   'game.sum-prompt': 'What does it cost?',
   'game.pays': 'Customer pays',
   'game.confirm': 'Give change',
+  'game.finish': 'Finish',
   'game.ask': 'Ask customer',
   'game.ask-for': 'Do you have',
   'game.walkout': 'Customer left!',

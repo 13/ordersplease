@@ -1,32 +1,61 @@
 <!-- src/lib/Numpad.svelte -->
-<script lang="ts">
-  import { formatEuro } from '../core/money';
+<script lang="ts" module>
+  export interface NumpadApi { press: (k: string) => void }
+</script>
 
-  let { onsubmit, symbolFirst = false }:
-    { onsubmit: (cents: number) => void; symbolFirst?: boolean } = $props();
+<script lang="ts">
+  import { formatEuro, parseEntry } from '../core/money';
+
+  let { onsubmit, symbolFirst = false, bindApi }: {
+    onsubmit: (cents: number) => void;
+    symbolFirst?: boolean;
+    bindApi?: (api: NumpadApi) => void;
+  } = $props();
 
   let digits = $state('');
-  const display = $derived(formatEuro(Number(digits || '0'), symbolFirst));
+  const display = $derived(formatEuro(parseEntry(digits), symbolFirst));
 
   function tap(d: string) {
-    if (digits.length < 6) digits += d;
+    if (d === ',') {
+      if (digits.includes(',')) return;
+      digits = digits === '' ? '0,' : digits + ',';
+      return;
+    }
+    const [euros, cents] = digits.split(',');
+    if (cents !== undefined) {
+      if (cents.length >= 2) return;
+    } else if (euros.length >= 4) return;
+    digits += d;
+  }
+  function backspace() {
+    digits = digits.slice(0, -1);
   }
   function submit() {
-    onsubmit(Number(digits || '0'));
+    if (digits === '') return;
+    onsubmit(parseEntry(digits));
     digits = '';
   }
+
+  bindApi?.({
+    press: (k) => {
+      if (k === 'Backspace') backspace();
+      else if (k === 'Enter') submit();
+      else tap(k);
+    },
+  });
 </script>
 
 <div class="numpad">
   <output>{display}</output>
   <div class="keys">
     {#each ['1','2','3','4','5','6','7','8','9'] as k}
-      <button onclick={() => tap(k)}>{k}</button>
+      <button type="button" onclick={() => tap(k)}>{k}</button>
     {/each}
-    <button class="fn" onclick={() => (digits = '')}>C</button>
-    <button onclick={() => tap('0')}>0</button>
-    <button class="ok" disabled={digits === ''} onclick={submit}>OK</button>
+    <button type="button" class="comma" onclick={() => tap(',')}>,</button>
+    <button type="button" onclick={() => tap('0')}>0</button>
+    <button type="button" class="ok" disabled={digits === ''} onclick={submit}>OK</button>
   </div>
+  <button type="button" class="fn" onclick={() => (digits = '')}>C</button>
 </div>
 
 <style>
@@ -41,7 +70,8 @@
     font-size: 1.5rem; padding: 0.75rem 0;
     background: var(--wood-light); color: var(--cream);
   }
-  .fn { background: var(--danger) !important; }
+  .comma { background: var(--accent) !important; color: var(--ink) !important; }
   .ok { background: var(--ok) !important; }
   .ok:disabled { opacity: 0.4; }
+  .fn { background: var(--danger); color: var(--cream); }
 </style>

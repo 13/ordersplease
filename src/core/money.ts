@@ -12,3 +12,11 @@ export function parseEuro(input: string): Cents | null {
   if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
   return Math.round(Number(cleaned) * 100);
 }
+
+/** Euros-first entry string → cents. '5' → 500, '4,5' → 450, '' → 0. */
+export function parseEntry(input: string): Cents {
+  if (input === '') return 0;
+  const [euros, cents = ''] = input.split(',');
+  const c = `${cents}00`.slice(0, 2);
+  return Number(euros || '0') * 100 + Number(c);
+}
