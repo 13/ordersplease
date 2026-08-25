@@ -98,7 +98,9 @@ export function generatePayment(
 }
 
 /** Payment that is plausibly short: exact decomposition minus its largest piece,
- *  or (single-piece totals) the next denomination below. */
+ *  or (single-piece totals) the next denomination below.
+ *  Contract: 0 <= sum < totalCents; the 5-cent minimum total yields an empty
+ *  (obviously short) payment. */
 export function generateUnderPayment(totalCents: Cents, rng: () => number): Denom[] {
   const pieces = exactPieces(totalCents);
   if (pieces.length > 1) {
@@ -107,7 +109,7 @@ export function generateUnderPayment(totalCents: Cents, rng: () => number): Deno
     return pieces.toSpliced(dropIdx, 1);
   }
   const below = DENOMS.filter((d) => d < pieces[0]);
-  return [below[0] ?? 5];
+  return below.length > 0 ? [below[0]] : [];
 }
 
 export interface Tab {

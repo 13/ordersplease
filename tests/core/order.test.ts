@@ -85,9 +85,12 @@ describe('generateUnderPayment', () => {
     for (let i = 0; i < 100; i++) {
       const total = 5 * (1 + Math.floor(rng() * 2000));
       const pieces = generateUnderPayment(total, rng);
-      expect(piecesTotal(pieces)).toBeGreaterThan(0);
+      expect(piecesTotal(pieces)).toBeGreaterThanOrEqual(0);
       expect(piecesTotal(pieces)).toBeLessThan(total);
     }
+  });
+  it('minimum-denom total yields an empty (obviously short) payment', () => {
+    expect(generateUnderPayment(5, mulberry32(1))).toEqual([]);
   });
 });
 
