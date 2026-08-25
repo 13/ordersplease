@@ -23,11 +23,11 @@ describe('generateOrder', () => {
   it('respects item quantity bounds and computes total', () => {
     const rng = mulberry32(7);
     for (let i = 0; i < 50; i++) {
-      const p = paramsForLevel(10); // itemsMin 2, itemsMax 3
+      const p = paramsForLevel(10); // segment 6->14, t=0.5: itemsMin round(2.5)=3, itemsMax round(4)=4
       const o = generateOrder(DEFAULT_MENU, p, rng);
       const totalQty = o.lines.reduce((s, l) => s + l.qty, 0);
-      expect(totalQty).toBeGreaterThanOrEqual(2);
-      expect(totalQty).toBeLessThanOrEqual(3);
+      expect(totalQty).toBeGreaterThanOrEqual(3);
+      expect(totalQty).toBeLessThanOrEqual(4);
       expect(o.totalCents).toBe(orderTotal(o.lines));
       expect(o.totalCents).toBeGreaterThan(0);
     }

@@ -29,18 +29,22 @@ const ANCHORS: Anchor[] = [
     patienceSeconds: 35, menuVisibleSeconds: null, scarceDenoms: 0, midOrderChangeProb: 0,
     showPileTotal: true,  ordersPerLevel: 6,
     underpayProb: 0, disputeProb: 0, tabProb: 0, splitProb: 0 },
-  { level: 8,  itemsMin: 2, itemsMax: 3, priceStyle: 'tens', paymentStyle: 'round',
+  { level: 6,  itemsMin: 2, itemsMax: 3, priceStyle: 'tens', paymentStyle: 'round',
     patienceSeconds: 28, menuVisibleSeconds: 5,    scarceDenoms: 1, midOrderChangeProb: 0.1,
     showPileTotal: true,  ordersPerLevel: 8,
     underpayProb: 0.08, disputeProb: 0, tabProb: 0, splitProb: 0 },
-  { level: 18, itemsMin: 3, itemsMax: 5, priceStyle: 'any',  paymentStyle: 'awkward',
+  { level: 14, itemsMin: 3, itemsMax: 5, priceStyle: 'any',  paymentStyle: 'awkward',
     patienceSeconds: 20, menuVisibleSeconds: 3,    scarceDenoms: 2, midOrderChangeProb: 0.25,
     showPileTotal: false, ordersPerLevel: 10,
     underpayProb: 0.15, disputeProb: 0.12, tabProb: 0.18, splitProb: 0.12 },
-  { level: 30, itemsMin: 4, itemsMax: 6, priceStyle: 'any',  paymentStyle: 'awkward',
+  { level: 22, itemsMin: 4, itemsMax: 6, priceStyle: 'any',  paymentStyle: 'awkward',
     patienceSeconds: 15, menuVisibleSeconds: 0,    scarceDenoms: 3, midOrderChangeProb: 0.35,
     showPileTotal: false, ordersPerLevel: 12,
     underpayProb: 0.2, disputeProb: 0.2, tabProb: 0.25, splitProb: 0.2 },
+  { level: 30, itemsMin: 5, itemsMax: 7, priceStyle: 'any',  paymentStyle: 'awkward',
+    patienceSeconds: 12, menuVisibleSeconds: 0,    scarceDenoms: 4, midOrderChangeProb: 0.4,
+    showPileTotal: false, ordersPerLevel: 12,
+    underpayProb: 0.25, disputeProb: 0.25, tabProb: 0.3, splitProb: 0.25 },
 ];
 
 function lerp(a: number, b: number, t: number): number {
@@ -81,10 +85,10 @@ export function paramsForLevel(level: number): DifficultyParams {
     splitProb: 0,
   };
   const gated = (value: number, entry: number) => (l < entry ? 0 : value);
-  result.underpayProb = gated(lerp(lo.underpayProb, hi.underpayProb, t), 8);
-  result.disputeProb = gated(lerp(lo.disputeProb, hi.disputeProb, t), 12);
-  result.tabProb = gated(lerp(lo.tabProb, hi.tabProb, t), 10);
-  result.splitProb = gated(lerp(lo.splitProb, hi.splitProb, t), 15);
+  result.underpayProb = gated(lerp(lo.underpayProb, hi.underpayProb, t), 6);
+  result.disputeProb = gated(lerp(lo.disputeProb, hi.disputeProb, t), 9);
+  result.tabProb = gated(lerp(lo.tabProb, hi.tabProb, t), 8);
+  result.splitProb = gated(lerp(lo.splitProb, hi.splitProb, t), 11);
   return result;
 }
 
@@ -114,7 +118,7 @@ export const SKILL_ERROR: Record<Skill, RoundError> = {
 /** Drill presets: mid-level base, all special mechanics off, then per-skill overrides. */
 export function practiceParams(skill: Skill): DifficultyParams {
   const base: DifficultyParams = {
-    ...paramsForLevel(14),
+    ...paramsForLevel(12),
     ordersPerLevel: 10,
     underpayProb: 0,
     disputeProb: 0,

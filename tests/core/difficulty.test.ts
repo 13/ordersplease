@@ -17,12 +17,12 @@ describe('difficulty', () => {
   });
   it('level 30 matches spec anchors', () => {
     const p = paramsForLevel(MAX_LEVEL);
-    expect(p.itemsMax).toBe(6);
+    expect(p.itemsMax).toBe(7);
     expect(p.priceStyle).toBe('any');
     expect(p.paymentStyle).toBe('awkward');
-    expect(p.patienceSeconds).toBe(15);
+    expect(p.patienceSeconds).toBe(12);
     expect(p.menuVisibleSeconds).toBe(0);
-    expect(p.midOrderChangeProb).toBeCloseTo(0.35);
+    expect(p.midOrderChangeProb).toBeCloseTo(0.4);
     expect(p.showPileTotal).toBe(false);
   });
   it('difficulty is monotone: patience never increases with level', () => {
@@ -41,26 +41,35 @@ describe('difficulty', () => {
 import { practiceParams, SKILL_ERROR } from '$core/difficulty';
 
 describe('round-2 probability rows', () => {
-  it('anchors at L30 per spec', () => {
-    const p = paramsForLevel(30);
-    expect(p.underpayProb).toBeCloseTo(0.2);
-    expect(p.disputeProb).toBeCloseTo(0.2);
-    expect(p.tabProb).toBeCloseTo(0.25);
-    expect(p.splitProb).toBeCloseTo(0.2);
-  });
   it('is exactly zero strictly below each entry level', () => {
-    expect(paramsForLevel(7).underpayProb).toBe(0);
-    expect(paramsForLevel(8).underpayProb).toBeGreaterThan(0);
-    expect(paramsForLevel(11).disputeProb).toBe(0);
-    expect(paramsForLevel(12).disputeProb).toBeGreaterThan(0);
-    expect(paramsForLevel(9).tabProb).toBe(0);
-    expect(paramsForLevel(10).tabProb).toBeGreaterThan(0);
-    expect(paramsForLevel(14).splitProb).toBe(0);
-    expect(paramsForLevel(15).splitProb).toBeGreaterThan(0);
+    expect(paramsForLevel(5).underpayProb).toBe(0);
+    expect(paramsForLevel(6).underpayProb).toBeGreaterThan(0);
+    expect(paramsForLevel(8).disputeProb).toBe(0);
+    expect(paramsForLevel(9).disputeProb).toBeGreaterThan(0);
+    expect(paramsForLevel(7).tabProb).toBe(0);
+    expect(paramsForLevel(8).tabProb).toBeGreaterThan(0);
+    expect(paramsForLevel(10).splitProb).toBe(0);
+    expect(paramsForLevel(11).splitProb).toBeGreaterThan(0);
   });
-  it('mid-game arrives earlier than before', () => {
-    expect(paramsForLevel(8).patienceSeconds).toBe(28);
-    expect(paramsForLevel(8).ordersPerLevel).toBe(8);
+  it('anchors at L6 and L22 per spec', () => {
+    const p6 = paramsForLevel(6);
+    expect(p6.patienceSeconds).toBe(28);
+    expect(p6.ordersPerLevel).toBe(8);
+    expect(p6.underpayProb).toBeCloseTo(0.08);
+    const p22 = paramsForLevel(22);
+    expect(p22.patienceSeconds).toBe(15);
+    expect(p22.tabProb).toBeCloseTo(0.25);
+  });
+  it('L30 endgame', () => {
+    const p = paramsForLevel(30);
+    expect(p.itemsMax).toBe(7);
+    expect(p.patienceSeconds).toBe(12);
+    expect(p.scarceDenoms).toBe(4);
+    expect(p.midOrderChangeProb).toBeCloseTo(0.4);
+    expect(p.underpayProb).toBeCloseTo(0.25);
+    expect(p.disputeProb).toBeCloseTo(0.25);
+    expect(p.tabProb).toBeCloseTo(0.3);
+    expect(p.splitProb).toBeCloseTo(0.25);
   });
   it('level 1 has all four at zero', () => {
     const p = paramsForLevel(1);
