@@ -21,7 +21,7 @@
   import { COIN_DENOMS, type Denom } from '../core/till';
   import { MAX_LEVEL } from '../core/difficulty';
   import { denomLabel } from '../lib/denom-view';
-  import { beep } from '../lib/sound';
+  import { chaChing, coinClink, errorBuzz } from '../lib/sound';
   import Numpad from '../lib/Numpad.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
   import PatienceBar from '../lib/PatienceBar.svelte';
@@ -108,7 +108,8 @@
       : done.errors.includes('change-wrong')
         ? `${$t('game.change-was')} ${formatEuro(done.changeDue, symbolFirst)}`
         : `${$t('game.wrong')} ${formatEuro(done.order.totalCents, symbolFirst)}`;
-    beep(!failed, $settings.sound);
+    if (failed) errorBuzz($settings.sound);
+    else chaChing($settings.sound);
     session = completeRound(session, done, { orderText, ms });
     round = null;
     pile = [];
@@ -125,11 +126,14 @@
     if (!round) return;
     round = submitSum(round, cents);
     if (round.phase === 'done') finishRound();
-    else if (round.sumTries > 0 && round.phase === 'sum') beep(false, $settings.sound);
+    else if (round.sumTries > 0 && round.phase === 'sum') errorBuzz($settings.sound);
   }
 
   function take(d: Denom) {
-    if ((tillView[d] ?? 0) > 0) pile = [...pile, d];
+    if ((tillView[d] ?? 0) > 0) {
+      pile = [...pile, d];
+      coinClink($settings.sound);
+    }
   }
   function ret(index: number) {
     pile = pile.toSpliced(index, 1);
@@ -140,7 +144,7 @@
     if (round.phase === 'done') finishRound();
     else {
       pile = [];
-      beep(false, $settings.sound);
+      errorBuzz($settings.sound);
     }
   }
   function onAsk(d: Denom) {
