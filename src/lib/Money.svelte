@@ -2,8 +2,11 @@
   import type { Denom } from '../core/till';
   import { denomColor, denomLabel, isNote } from './denom-view';
 
-  let { denom, disabled = false, count = null, onclick }:
-    { denom: Denom; disabled?: boolean; count?: number | null; onclick?: () => void } = $props();
+  let { denom, disabled = false, count = null, keyBadge = null, onclick }:
+    {
+      denom: Denom; disabled?: boolean; count?: number | null;
+      keyBadge?: string | null; onclick?: () => void;
+    } = $props();
 
   const label = $derived(
     count === null ? denomLabel(denom) : `${denomLabel(denom)} (${count})`,
@@ -19,6 +22,7 @@
 >
   {denomLabel(denom)}
   {#if count !== null}<span class="badge">{count}</span>{/if}
+  {#if keyBadge}<kbd class="keybadge">{keyBadge}</kbd>{/if}
 </button>
 
 <style>
@@ -35,5 +39,11 @@
     position: absolute; top: -6px; right: -6px;
     background: var(--ink); color: var(--cream);
     border-radius: 999px; font-size: 0.7rem; padding: 1px 6px;
+  }
+  .keybadge {
+    position: absolute; bottom: -6px; left: -6px;
+    background: var(--cream); color: var(--ink);
+    border-radius: 4px; font-size: 0.65rem; padding: 0 4px;
+    font-family: inherit;
   }
 </style>

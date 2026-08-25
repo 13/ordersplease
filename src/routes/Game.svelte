@@ -29,12 +29,13 @@
   import { renderOrder, renderAmendment, renderWave, renderPayer } from '../core/text-order';
   import { starsFor } from '../core/scoring';
   import { formatEuro } from '../core/money';
-  import { COIN_DENOMS, type Denom } from '../core/till';
+  import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
   import { chaChing, coinClink, errorBuzz, tickTock } from '../lib/sound';
   import EndOverlay from '../lib/EndOverlay.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
   import Numpad from '../lib/Numpad.svelte';
+  import type { NumpadApi } from '../lib/Numpad.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
   import PatienceBar from '../lib/PatienceBar.svelte';
   import TillGrid from '../lib/TillGrid.svelte';
@@ -81,6 +82,8 @@
   let menuTimer: ReturnType<typeof setTimeout> | undefined;
   let flashTimer: ReturnType<typeof setTimeout> | undefined;
   let numpadLocked = $state(false);
+  let numpadApi: NumpadApi | null = null;
+  let hasKeyboard = $state(false); // becomes true on first physical keydown → shows badges
   let waveTimer: ReturnType<typeof setTimeout> | undefined;
   let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
   let payerIndex = $state(0);
@@ -375,6 +378,29 @@
     setTimeout(() => (heartPulse = false), 600);
   }
 
+  function onKey(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
+    if (session.finished || dispute) return;
+    hasKeyboard = true;
+    const k = e.key;
+    if (!round) return;
+    if (round.phase === 'sum' && !numpadLocked) {
+      if (/^[0-9]$/.test(k)) { numpadApi?.press(k); e.preventDefault(); }
+      else if (k === ',' || k === '.') { numpadApi?.press(','); e.preventDefault(); }
+      else if (k === 'Backspace') { numpadApi?.press('Backspace'); e.preventDefault(); }
+      else if (k === 'Enter') { numpadApi?.press('Enter'); e.preventDefault(); }
+    } else if (round.phase === 'change') {
+      if (/^[0-9]$/.test(k)) {
+        const idx = k === '0' ? 9 : Number(k) - 1;
+        take(DENOMS[idx]);
+        e.preventDefault();
+      } else if (k === 'Enter') { confirmChange(); e.preventDefault(); }
+      else if (k === 'a' || k === 'A') { askOpen = !askOpen; e.preventDefault(); }
+      else if (k === 'n' || k === 'N') { onNotEnough(); e.preventDefault(); }
+    }
+  }
+
   onMount(() => {
     startRound();
     const iv = setInterval(() => {
@@ -417,6 +443,7 @@
   });
 </script>
 
+<svelte:window onkeydown={onKey} />
 <main class="game">
   <header>
     <span class="lives" class:pulse={heartPulse}>{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
@@ -448,7 +475,7 @@
         <p class="prompt">{$t('game.tab-wait')}</p>
       {:else}
         <p class="prompt">{$t('game.sum-prompt')}</p>
-        <Numpad onsubmit={onSum} {symbolFirst} />
+        <Numpad onsubmit={onSum} {symbolFirst} bindApi={(api) => (numpadApi = api)} />
       {/if}
     {:else if round.phase === 'change'}
       <p class="prompt">
@@ -457,7 +484,7 @@
           <span class="paid">{denomLabel(p)}</span>
         {/each}
       </p>
-      <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} />
+      <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} showKeys={hasKeyboard} />
       <ChangePile {pile} showTotal={session.params.showPileTotal} onreturn={ret} />
       <div class="actions">
         <button class="confirm" onclick={confirmChange}>

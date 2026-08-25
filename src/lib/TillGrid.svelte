@@ -2,15 +2,17 @@
   import { DENOMS, type Denom, type Till } from '../core/till';
   import Money from './Money.svelte';
 
-  let { till, ontake, disabled = false }: {
-    till: Till; ontake: (d: Denom) => void; disabled?: boolean;
+  let { till, ontake, disabled = false, showKeys = false }: {
+    till: Till; ontake: (d: Denom) => void; disabled?: boolean; showKeys?: boolean;
   } = $props();
 </script>
 
 <div class="till" class:dimmed={disabled}>
-  {#each DENOMS as d (d)}
+  {#each DENOMS as d, i (d)}
     <Money denom={d} count={till[d] ?? 0}
-      disabled={disabled || (till[d] ?? 0) === 0} onclick={() => ontake(d)} />
+      disabled={disabled || (till[d] ?? 0) === 0}
+      keyBadge={showKeys ? String((i + 1) % 10) : null}
+      onclick={() => ontake(d)} />
   {/each}
 </div>
 
