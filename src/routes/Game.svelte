@@ -592,9 +592,7 @@
     {/key}
   {/if}
 
-  {#if !paused && !dispute}
-    <CoinBurst {burstKey} />
-  {/if}
+  <CoinBurst {burstKey} />
 
   {#if flash}<div class="flash">{flash}</div>{/if}
 
