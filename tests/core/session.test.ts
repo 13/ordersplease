@@ -27,7 +27,7 @@ function winRound(s: ReturnType<typeof freshSession>) {
 }
 
 describe('createSession', () => {
-  it('level 1: full till, one customer, round-price menu', () => {
+  it('level 1: full till, one customer, half-step menu', () => {
     const s = freshSession();
     expect(s.queue.length).toBe(1);
     expect(s.till[5]).toBeGreaterThan(0);

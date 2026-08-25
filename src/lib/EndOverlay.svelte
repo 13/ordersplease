@@ -25,6 +25,10 @@
 
   let displayScore = $state(0);
   $effect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      displayScore = session.score;
+      return;
+    }
     const target = session.score;
     const steps = 20;
     let i = 0;

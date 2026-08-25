@@ -206,7 +206,6 @@
     if (hintDebt > 0) {
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
       session = { ...session, score: session.score - Math.min(hintDebt, gained) };
-      hintDebt = 0;
     }
     chaChing($settings.sound);
     payerIndex += 1;
@@ -434,6 +433,7 @@
       return;
     }
     if (k === ' ') {
+      if (session.finished) return; // let Space activate focused overlay buttons
       setPaused(!paused);
       e.preventDefault();
       return;
@@ -450,6 +450,7 @@
       else if (k === 't' || k === 'T') { onTipp(); e.preventDefault(); }
     } else if (round.phase === 'change') {
       if (/^[0-9]$/.test(k)) {
+        if (round.changeDue === 0) return; // Finish rounds: till is disabled for keys too
         const idx = k === '0' ? 9 : Number(k) - 1;
         take(DENOMS[idx]);
         e.preventDefault();
@@ -539,7 +540,7 @@
           {:else}
             <p class="prompt">{$t('game.sum-prompt')}</p>
             <Numpad onsubmit={onSum} {symbolFirst} bindApi={(api) => (numpadApi = api)} />
-            <button class="tipp" onclick={onTipp}>{$t('game.tipp')} (−25)</button>
+            <button class="tipp" onclick={onTipp}>{$t('game.tipp')}</button>
           {/if}
         {:else if round.phase === 'change'}
           <p class="prompt">
