@@ -58,6 +58,7 @@
   let waveTimer: ReturnType<typeof setTimeout> | undefined;
   let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
   let payerIndex = $state(0);
+  let groupBaseText = $state('');
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -116,7 +117,8 @@
         splitGroups = groups;
         const sub = { lines: groups[0], totalCents: orderTotal(groups[0]) };
         round = createRound(sub, makePayment(sub.totalCents), session.till, 'split');
-        orderText = `${renderOrder(order, $settings.locale)} ${renderPayer(groups[0], $settings.locale)}`;
+        groupBaseText = renderOrder(order, $settings.locale);
+        orderText = `${groupBaseText} ${renderPayer(groups[0], $settings.locale)}`;
       } else {
         round = createRound(order, makePayment(order.totalCents), session.till);
         orderText = renderOrder(order, $settings.locale);
@@ -163,7 +165,7 @@
       ? generateUnderPayment(sub.totalCents, session.rng)
       : generatePayment(sub.totalCents, session.params.paymentStyle, session.rng);
     round = createRound(sub, payment, session.till, 'split');
-    orderText = orderText.replace(/ [^.]*\.$/, '') + ' ' + renderPayer(group, $settings.locale);
+    orderText = `${groupBaseText} ${renderPayer(group, $settings.locale)}`;
     pile = [];
     askOpen = false;
     roundStartedAt = performance.now();
@@ -172,6 +174,7 @@
   function finishRound() {
     if (!round) return;
     if (splitGroups && round.success === true && payerIndex < splitGroups.length - 1) {
+      disputeVerdict = null; // intermediate payers consume their verdict silently
       nextPayer();
       return;
     }
