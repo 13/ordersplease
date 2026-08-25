@@ -8,6 +8,7 @@
   import MenuEditor from './routes/MenuEditor.svelte';
   import Settings from './routes/Settings.svelte';
   import Practice from './routes/Practice.svelte';
+  import Tutorial from './routes/Tutorial.svelte';
   import { SKILL_ERROR, type Skill } from './core/difficulty';
   import { settings } from './stores/settings';
   import { progress, unlockedLevel } from './stores/progress';
@@ -67,6 +68,8 @@
     <Practice />
   {:else if $route === 'daily'}
     <Game mode="daily" />
+  {:else if $route === 'tutorial'}
+    <Tutorial />
   {:else}
     <Home />
   {/if}
