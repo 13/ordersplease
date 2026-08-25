@@ -349,6 +349,7 @@
     disputeVerdict = null;
     round = null;
     pile = [];
+    askOpen = false; // don't let a stale ask row eat the next Escape during the flash
     if (done.success === true && done.usedTrapCall) trapCaught = true;
     if (done.success === true && done.kind === 'tab') tabServed = true;
     if (done.success === true && splitGroups) splitServed = true;
@@ -561,6 +562,7 @@
 
   function setPaused(on: boolean, menu = false) {
     if (session.finished) return;
+    if (on) askOpen = false; // a stale open ask row would swallow the resume Escape
     paused = on;
     pauseMenu = on && menu;
     const timers = [amendT, menuT, flashT, waveT];
