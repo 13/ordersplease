@@ -14,7 +14,7 @@ export function hintFor(round: RoundState, index: number, locale: 'en' | 'de'): 
   }
   if (!round.usedAsk && !canMakeChange(round.till, round.changeDue)) {
     return locale === 'en'
-      ? "The till can't make this — ask for a coin."
+      ? 'The till can’t make this — ask for a coin.'
       : 'Die Kasse kann das nicht — frag nach einer Münze.';
   }
   return locale === 'en'
