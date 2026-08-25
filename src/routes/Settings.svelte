@@ -5,6 +5,7 @@
   import { progress } from '../stores/progress';
   import { stats, EMPTY } from '../stores/stats';
   import { customMenu } from '../stores/menu';
+  import { history } from '../stores/history';
   import { DEFAULT_MENU } from '../core/menu';
 
   function resetAll() {
@@ -12,6 +13,7 @@
     progress.set({ stars: {} });
     stats.set(structuredClone(EMPTY));
     customMenu.set(DEFAULT_MENU.map((m) => ({ ...m })));
+    history.set({});
   }
 </script>
 
