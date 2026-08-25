@@ -10,7 +10,7 @@
   import { t } from '../i18n';
   import {
     createSession, tickSession, completeRound, completeSubRound, spawnCustomer, MAX_LIVES,
-    effectiveLevel,
+    effectiveLevel, patienceFrac,
   } from '../core/session';
   import type { SessionMode } from '../core/session';
   import { practiceParams, paramsForLevel, type Skill, MAX_LEVEL } from '../core/difficulty';
@@ -34,10 +34,11 @@
   import { formatEuro } from '../core/money';
   import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
-  import { chaChing, coinClink, errorBuzz, tickTock } from '../lib/sound';
+  import { chaChing, coinClink, errorBuzz, fanfare, tickTock } from '../lib/sound';
   import { PausableTimer } from '../lib/pausable';
   import Money from '../lib/Money.svelte';
   import EndOverlay from '../lib/EndOverlay.svelte';
+  import CoinBurst from '../lib/CoinBurst.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
   import PauseOverlay from '../lib/PauseOverlay.svelte';
   import Numpad from '../lib/Numpad.svelte';
@@ -83,6 +84,8 @@
   let disputeVerdict = $state<string | null>(null); // overrides the success flash once
   let finalized = $state(false);
   let wasNewHigh = $state(false);
+  let burstKey = $state(0);
+  let bigWin = $state(false);
   let roundStartedAt = 0;
   const amendT = new PausableTimer();
   const menuT = new PausableTimer();
@@ -247,11 +250,16 @@
       errorBuzz($settings.sound);
       pulseHearts();
     } else chaChing($settings.sound);
+    const frac = patienceFrac(session);
     session = completeRound(session, done, { orderText, ms });
     if (hintDebt > 0) {
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
       session = { ...session, score: session.score - Math.min(hintDebt, gained) };
       hintDebt = 0;
+    }
+    if (!failed && done.sumTries === 0 && done.changeTries === 0
+        && !done.usedHint && frac > 0.5) {
+      burstKey += 1;
     }
     flash = disputeVerdict !== null
       ? disputeVerdict
@@ -375,6 +383,8 @@
     disputeVerdict = null;
     finalized = false;
     wasNewHigh = false;
+    burstKey = 0;
+    bigWin = false;
     shareCopied = false;
     pile = [];
     splitGroups = null;
@@ -404,6 +414,11 @@
       const perfect = fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success);
       daily.update((prev) => nextDailyRecord(prev, new Date(), session.score, perfect));
     }
+    bigWin = (session.mode === 'level' && session.finished === 'won' && stars === 3)
+      || (session.mode === 'rush' && wasNewHigh)
+      || (session.mode === 'daily' && session.roundLog.filter((e) => !e.sub).every((e) => e.success)
+          && session.roundLog.filter((e) => !e.sub).length >= DAILY_ORDERS);
+    if (bigWin) fanfare($settings.sound);
   }
 
   function doShare() {
@@ -577,6 +592,8 @@
     {/key}
   {/if}
 
+  <CoinBurst {burstKey} />
+
   {#if flash}<div class="flash">{flash}</div>{/if}
 
   {#if session.finished && finalized}
@@ -586,6 +603,7 @@
       shareLabel={shareCopied ? $t('daily.copied') : $t('daily.share')}
       note={mode === 'daily' && !rankedRun ? $t('daily.unranked') : null}
       levelName={mode === 'level' ? $t(`level.name.${level}`) : null}
+      celebrate={bigWin}
     />
   {/if}
 

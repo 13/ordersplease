@@ -44,3 +44,12 @@ export function tickTock(enabled: boolean): void {
   lastTick = now;
   try { tone(880, 0.03, 0.04, 'square'); } catch { /* silent */ }
 }
+
+export function fanfare(enabled: boolean): void {
+  if (!enabled) return;
+  try {
+    tone(1200, 0.1, 0.07, 'square');
+    tone(1500, 0.1, 0.07, 'square', 0.1);
+    tone(1800, 0.3, 0.08, 'square', 0.2);
+  } catch { /* silent */ }
+}
