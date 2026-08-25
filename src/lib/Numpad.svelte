@@ -36,12 +36,14 @@
     digits = '';
   }
 
-  bindApi?.({
-    press: (k) => {
-      if (k === 'Backspace') backspace();
-      else if (k === 'Enter') submit();
-      else tap(k);
-    },
+  $effect(() => {
+    bindApi?.({
+      press: (k) => {
+        if (k === 'Backspace') backspace();
+        else if (k === 'Enter') submit();
+        else tap(k);
+      },
+    });
   });
 </script>
 
