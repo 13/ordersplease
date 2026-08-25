@@ -98,7 +98,7 @@
   let disputeOptRoll = $state(0);
   let hintText = $state<string | null>(null);
   let hintIndex = $state(0);
-  let scoreAtRoundStart = 0;
+  let hintDebt = 0; // 25 per Tipp press, settled against the round's gained score
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -127,7 +127,7 @@
     askOpen = false;
     hintText = null;
     hintIndex = 0;
-    scoreAtRoundStart = session.score;
+    hintDebt = 0;
 
     const roll = session.rng();
     const makePayment = (cents: number) =>
@@ -202,6 +202,11 @@
     session = completeSubRound(session, done, {
       orderText: renderPayer(splitGroups[payerIndex], $settings.locale), ms,
     });
+    if (hintDebt > 0) {
+      const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
+      session = { ...session, score: session.score - Math.min(hintDebt, gained) };
+      hintDebt = 0;
+    }
     chaChing($settings.sound);
     payerIndex += 1;
     const group = splitGroups[payerIndex];
@@ -217,7 +222,7 @@
     askOpen = false;
     hintText = null;
     hintIndex = 0;
-    scoreAtRoundStart = session.score;
+    hintDebt = 0;
     roundStartedAt = performance.now();
   }
 
@@ -237,6 +242,11 @@
       pulseHearts();
     } else chaChing($settings.sound);
     session = completeRound(session, done, { orderText, ms });
+    if (hintDebt > 0) {
+      const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
+      session = { ...session, score: session.score - Math.min(hintDebt, gained) };
+      hintDebt = 0;
+    }
     flash = disputeVerdict !== null
       ? disputeVerdict
       : failed
@@ -323,7 +333,7 @@
     round = markHint(round);
     hintText = hintFor(round, hintIndex, $settings.locale);
     hintIndex += 1;
-    session = { ...session, score: Math.max(session.score - 25, scoreAtRoundStart) };
+    hintDebt += 25;
   }
 
   function resolveDispute(chosen: number) {
