@@ -1,7 +1,10 @@
-# Orders, Please
+<p align="center">
+  <img src="public/icon.svg" alt="Orders, Please logo" width="128" height="128" />
+</p>
 
-Bar mental-math trainer. Sum drink orders, take payment, give correct change
-from a finite till — before the customer walks out.
+<h1 align="center">Orders, Please</h1>
+
+<p align="center"><em>Train your bar brain: sum the order, take the money, give the right change — before the customer walks.</em></p>
 
 - **Levels**: 30 levels ramping from single drinks with round prices to
   six-item orders, hidden menus, coin shortages and mid-order changes.
@@ -16,12 +19,15 @@ from a finite till — before the customer walks out.
   in waves on a tab, and split the bill.
 - **Stats**: error breakdown per skill (sums, change, shortages, parsing, speed).
 - **Plays great with a keyboard**: type sums directly (`5` → 5,00 €, comma for
-  cents), number keys grab coins from the till, Enter confirms, A asks,
+  cents), number keys 1-9 grab coins from the till, Enter confirms, A asks,
   N challenges a short payment, T buys a hint, Space pauses, Esc opens the
   game menu.
 - **Tipp system**: stuck? A hint costs 25 points and the round's first-try
   bonus — it shows structure (a line's subtotal, the change amount), never
   the full answer.
+- **A real menu**: nine drinks plus Wurst, Hähnchen, and Schnitzel once the
+  kitchen opens at level 10 — every one of the 30 named shifts, from First
+  Shift to Bar Legend, gets harder faster.
 
 ## Tech
 
