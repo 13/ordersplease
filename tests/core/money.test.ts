@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatEuro } from '$core/money';
+import { formatEuro, parseEuro } from '$core/money';
 
 describe('formatEuro', () => {
   it('formats euros and cents with comma', () => {
@@ -16,5 +16,20 @@ describe('formatEuro', () => {
   });
   it('symbol-first variant', () => {
     expect(formatEuro(450, true)).toBe('€ 4,50');
+  });
+});
+
+describe('parseEuro', () => {
+  it('parses comma and dot decimals', () => {
+    expect(parseEuro('4,50')).toBe(450);
+    expect(parseEuro('4.50')).toBe(450);
+    expect(parseEuro('4')).toBe(400);
+    expect(parseEuro(' 2,5 ')).toBe(250);
+  });
+  it('rejects junk', () => {
+    expect(parseEuro('')).toBeNull();
+    expect(parseEuro('abc')).toBeNull();
+    expect(parseEuro('-4')).toBeNull();
+    expect(parseEuro('4,555')).toBeNull();
   });
 });
