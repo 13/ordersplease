@@ -78,10 +78,6 @@ export function tickSession(s: SessionState, dtMs: number): SessionState {
     next.params = paramsForRush(next.elapsedMs / 1000);
     next.level = Math.floor(1 + next.elapsedMs / 30_000);
     next.spawnCooldownMs -= dtMs;
-    if (next.spawnCooldownMs <= 0) {
-      next = spawnCustomer(next);
-      next.spawnCooldownMs = spawnIntervalMs(next.params);
-    }
   }
   const drained = next.queue.map((c, i) => ({
     ...c,
@@ -92,6 +88,11 @@ export function tickSession(s: SessionState, dtMs: number): SessionState {
   next.queue = stayed;
   next.livesLost += walkouts;
   if (walkouts > 0) next.streak = 0;
+  // spawn after the drain so a customer arriving this tick starts with full patience
+  if (next.mode === 'rush' && next.spawnCooldownMs <= 0) {
+    next = spawnCustomer(next);
+    next.spawnCooldownMs = spawnIntervalMs(next.params);
+  }
   return checkLost(next);
 }
 
