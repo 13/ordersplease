@@ -1,0 +1,16 @@
+{
+  "packageId": "de.egger.ordersplease",
+  "host": "13.github.io",
+  "name": "Orders, Please",
+  "launcherName": "Orders",
+  "display": "standalone",
+  "themeColor": "#2b1d12",
+  "backgroundColor": "#2b1d12",
+  "startUrl": "/ordersplease/",
+  "iconUrl": "https://13.github.io/ordersplease/pwa-512.png",
+  "maskableIconUrl": "https://13.github.io/ordersplease/pwa-maskable-512.png",
+  "orientation": "portrait",
+  "webManifestUrl": "https://13.github.io/ordersplease/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "enableNotifications": false
+}
