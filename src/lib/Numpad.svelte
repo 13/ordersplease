@@ -25,7 +25,7 @@
     {/each}
     <button class="fn" onclick={() => (digits = '')}>C</button>
     <button onclick={() => tap('0')}>0</button>
-    <button class="ok" onclick={submit}>OK</button>
+    <button class="ok" disabled={digits === ''} onclick={submit}>OK</button>
   </div>
 </div>
 
@@ -43,4 +43,5 @@
   }
   .fn { background: var(--danger) !important; }
   .ok { background: var(--ok) !important; }
+  .ok:disabled { opacity: 0.4; }
 </style>

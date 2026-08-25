@@ -25,6 +25,8 @@ export default {
   'result.retry': 'Nochmal',
   'result.home': 'Start',
   'result.highscore': 'Neuer Rekord!',
+  'result.details': 'Details',
+  'result.accuracy': 'Trefferquote',
   'levels.title': 'Level',
   'stats.title': 'Statistik',
   'stats.rounds': 'Bestellungen serviert',

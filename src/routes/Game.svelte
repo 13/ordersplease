@@ -7,7 +7,6 @@
   import { stats, recordRound, recordDay } from '../stores/stats';
   import { progress } from '../stores/progress';
   import { t } from '../i18n';
-  import { go } from '../lib/router';
   import {
     createSession, tickSession, completeRound, spawnCustomer, MAX_LIVES,
   } from '../core/session';
@@ -19,9 +18,9 @@
   import { starsFor } from '../core/scoring';
   import { formatEuro } from '../core/money';
   import { COIN_DENOMS, type Denom } from '../core/till';
-  import { MAX_LEVEL } from '../core/difficulty';
   import { denomLabel } from '../lib/denom-view';
   import { chaChing, coinClink, errorBuzz } from '../lib/sound';
+  import EndOverlay from '../lib/EndOverlay.svelte';
   import Numpad from '../lib/Numpad.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
   import PatienceBar from '../lib/PatienceBar.svelte';
@@ -41,6 +40,7 @@
   let askOpen = $state(false);
   let flash = $state<string | null>(null);
   let finalized = $state(false);
+  let wasNewHigh = $state(false);
   let roundStartedAt = 0;
   let amendTimer: ReturnType<typeof setTimeout> | undefined;
   let menuTimer: ReturnType<typeof setTimeout> | undefined;
@@ -165,6 +165,7 @@
     round = null;
     flash = null;
     finalized = false;
+    wasNewHigh = false;
     pile = [];
     startRound();
   }
@@ -174,8 +175,10 @@
     finalized = true;
     stats.update((s) => {
       let next = recordDay(s, new Date());
-      if (session.mode === 'rush' && session.score > next.rushHigh)
+      if (session.mode === 'rush' && session.score > next.rushHigh) {
+        wasNewHigh = true;
         next = { ...next, rushHigh: session.score };
+      }
       return next;
     });
     if (session.mode === 'level' && session.finished === 'won') {
@@ -199,6 +202,14 @@
         finishRound();
       }
       session = tickSession(session, dt);
+      if (!flash && session.lastWalkouts > 0) {
+        flash = $t('game.walkout');
+        clearTimeout(flashTimer);
+        flashTimer = setTimeout(() => {
+          flash = null;
+          startRound();
+        }, 1000);
+      }
       if (session.finished) {
         if (!flash) finalize();
       } else if (!round && !flash && session.queue.length > 0) startRound();
@@ -263,23 +274,7 @@
   {#if flash}<div class="flash">{flash}</div>{/if}
 
   {#if session.finished && finalized}
-    <div class="overlay">
-      <h2>{session.finished === 'won' ? $t('result.won') : $t('result.lost')}</h2>
-      {#if session.finished === 'won'}
-        <p class="stars">{'★'.repeat(stars)}{'☆'.repeat(3 - stars)}</p>
-      {/if}
-      <p>{$t('game.score')}: {session.score}</p>
-      {#if mode === 'rush' && session.score >= $stats.rushHigh && session.score > 0}
-        <p>{$t('result.highscore')}</p>
-      {/if}
-      <div class="overlay-actions">
-        {#if mode === 'level' && session.finished === 'won' && level < MAX_LEVEL}
-          <button onclick={() => go(`game/${level + 1}`)}>{$t('result.next')}</button>
-        {/if}
-        <button onclick={restart}>{$t('result.retry')}</button>
-        <button onclick={() => go('home')}>{$t('result.home')}</button>
-      </div>
-    </div>
+    <EndOverlay {session} {level} {stars} {wasNewHigh} onretry={restart} />
   {/if}
 </main>
 
@@ -312,12 +307,4 @@
     padding: 0.75rem 1.5rem; border-radius: var(--radius);
     font-size: 1.3rem; font-weight: bold;
   }
-  .overlay {
-    position: fixed; inset: 0; background: rgb(0 0 0 / 0.75);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 0.75rem; text-align: center;
-  }
-  .stars { font-size: 2.2rem; color: var(--accent); }
-  .overlay-actions { display: flex; flex-direction: column; gap: 0.5rem; width: 240px; }
-  .overlay-actions button { background: var(--accent); color: var(--ink); font-size: 1.1rem; }
 </style>

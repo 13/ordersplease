@@ -25,6 +25,8 @@ export default {
   'result.retry': 'Retry',
   'result.home': 'Home',
   'result.highscore': 'New highscore!',
+  'result.details': 'Details',
+  'result.accuracy': 'Accuracy',
   'levels.title': 'Levels',
   'stats.title': 'Stats',
   'stats.rounds': 'Orders served',
