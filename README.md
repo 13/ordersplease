@@ -15,6 +15,13 @@ from a finite till — before the customer walks out.
 - **Bar reality**: customers underpay, dispute what they handed you, order
   in waves on a tab, and split the bill.
 - **Stats**: error breakdown per skill (sums, change, shortages, parsing, speed).
+- **Plays great with a keyboard**: type sums directly (`5` → 5,00 €, comma for
+  cents), number keys grab coins from the till, Enter confirms, A asks,
+  N challenges a short payment, T buys a hint, Space pauses, Esc opens the
+  game menu.
+- **Tipp system**: stuck? A hint costs 25 points and the round's first-try
+  bonus — it shows structure (a line's subtotal, the change amount), never
+  the full answer.
 
 ## Tech
 
