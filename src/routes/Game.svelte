@@ -32,8 +32,10 @@
   import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
   import { chaChing, coinClink, errorBuzz, tickTock } from '../lib/sound';
+  import { PausableTimer } from '../lib/pausable';
   import EndOverlay from '../lib/EndOverlay.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
+  import PauseOverlay from '../lib/PauseOverlay.svelte';
   import Numpad from '../lib/Numpad.svelte';
   import type { NumpadApi } from '../lib/Numpad.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
@@ -78,13 +80,15 @@
   let finalized = $state(false);
   let wasNewHigh = $state(false);
   let roundStartedAt = 0;
-  let amendTimer: ReturnType<typeof setTimeout> | undefined;
-  let menuTimer: ReturnType<typeof setTimeout> | undefined;
-  let flashTimer: ReturnType<typeof setTimeout> | undefined;
+  const amendT = new PausableTimer();
+  const menuT = new PausableTimer();
+  const flashT = new PausableTimer();
+  const waveT = new PausableTimer();
+  let paused = $state(false);
+  let pauseMenu = $state(false);
   let numpadLocked = $state(false);
   let numpadApi: NumpadApi | null = null;
   let hasKeyboard = $state(false); // becomes true on first physical keydown → shows badges
-  let waveTimer: ReturnType<typeof setTimeout> | undefined;
   let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
   let payerIndex = $state(0);
   let groupBaseText = $state('');
@@ -104,8 +108,8 @@
 
   function startRound() {
     if (session.finished || round || flash) return;
-    clearTimeout(amendTimer);
-    clearTimeout(waveTimer);
+    amendT.clear();
+    waveT.clear();
     if (session.queue.length === 0) {
       if (session.mode === 'rush') return; // rush waits for the spawn timer
       session = spawnCustomer(session);
@@ -134,10 +138,10 @@
         if (!round || round.phase !== 'sum') return;
         orderText += ' ' + renderWave(tab.waves[waveIdx], $settings.locale);
         waveIdx += 1;
-        if (waveIdx < tab.waves.length) waveTimer = setTimeout(revealNext, 3500);
+        if (waveIdx < tab.waves.length) waveT.start(revealNext, 3500);
         else numpadLocked = false;
       };
-      waveTimer = setTimeout(revealNext, 3500);
+      waveT.start(revealNext, 3500);
     } else {
       const order = generateOrder(session.menu, session.params, session.rng);
       const groups = roll < session.params.tabProb + session.params.splitProb
@@ -155,7 +159,7 @@
         orderText = renderOrder(order, $settings.locale);
         if (session.rng() < session.params.midOrderChangeProb) {
           const amended = amendOrder(order, session.rng);
-          amendTimer = setTimeout(() => {
+          amendT.start(() => {
             if (round && round.phase === 'sum' && round.kind === 'normal') {
               const pieces = generatePayment(
                 amended.order.totalCents, session.params.paymentStyle, session.rng,
@@ -175,10 +179,10 @@
     roundStartedAt = performance.now();
 
     const vis = session.params.menuVisibleSeconds;
-    clearTimeout(menuTimer);
+    menuT.clear();
     menuHidden = vis === 0;
     if (vis !== null && vis > 0) {
-      menuTimer = setTimeout(() => (menuHidden = true), vis * 1000);
+      menuT.start(() => (menuHidden = true), vis * 1000);
     }
   }
 
@@ -233,11 +237,11 @@
     round = null;
     pile = [];
     splitGroups = null;
-    clearTimeout(amendTimer);
-    clearTimeout(waveTimer);
-    clearTimeout(menuTimer);
-    clearTimeout(flashTimer);
-    flashTimer = setTimeout(() => {
+    amendT.clear();
+    waveT.clear();
+    menuT.clear();
+    flashT.clear();
+    flashT.start(() => {
       flash = null;
       startRound();
     }, 1400);
@@ -293,8 +297,8 @@
       finishRound();
     } else if (!wasTrapCall && round.usedTrapCall) {
       flash = $t('game.trap-good');
-      clearTimeout(flashTimer);
-      flashTimer = setTimeout(() => {
+      flashT.clear();
+      flashT.start(() => {
         flash = null;
         startRound(); // no-op while this round is live — timer just clears the flash
       }, 1000);
@@ -324,10 +328,10 @@
 
   // retry keeps the same hash, so {#key $route} never remounts — reset in place
   function restart() {
-    clearTimeout(amendTimer);
-    clearTimeout(waveTimer);
-    clearTimeout(menuTimer);
-    clearTimeout(flashTimer);
+    amendT.clear();
+    waveT.clear();
+    menuT.clear();
+    flashT.clear();
     session = newSession();
     round = null;
     flash = null;
@@ -338,6 +342,8 @@
     shareCopied = false;
     pile = [];
     splitGroups = null;
+    paused = false;
+    pauseMenu = false;
     startRound();
   }
 
@@ -378,12 +384,31 @@
     setTimeout(() => (heartPulse = false), 600);
   }
 
+  function setPaused(on: boolean, menu = false) {
+    if (session.finished) return;
+    paused = on;
+    pauseMenu = on && menu;
+    const timers = [amendT, menuT, flashT, waveT];
+    for (const t of timers) on ? t.pause() : t.resume();
+  }
+
   function onKey(e: KeyboardEvent) {
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
+    const k = e.key;
+    if (k === 'Escape') {
+      if (paused) setPaused(false);
+      else setPaused(true, true);
+      e.preventDefault();
+      return;
+    }
+    if (k === ' ') {
+      setPaused(!paused);
+      e.preventDefault();
+      return;
+    }
     if (session.finished || dispute) return;
     hasKeyboard = true;
-    const k = e.key;
     if (!round) return;
     if (round.phase === 'sum' && !numpadLocked) {
       if (/^[0-9]$/.test(k)) { numpadApi?.press(k); e.preventDefault(); }
@@ -410,6 +435,7 @@
         return;
       }
       if (dispute) return; // freeze the bar while the customer disputes
+      if (paused) return;
       // head walking out during a live round = that round times out (see rules above)
       if (!dispute && round && session.queue[0] && session.queue[0].patienceMs <= dt) {
         round = timeoutRound(round);
@@ -418,8 +444,8 @@
       session = tickSession(session, dt);
       if (!flash && session.lastWalkouts > 0) {
         flash = $t('game.walkout');
-        clearTimeout(flashTimer);
-        flashTimer = setTimeout(() => {
+        flashT.clear();
+        flashT.start(() => {
           flash = null;
           startRound();
         }, 1000);
@@ -435,10 +461,10 @@
     }, 200);
     return () => {
       clearInterval(iv);
-      clearTimeout(amendTimer);
-      clearTimeout(waveTimer);
-      clearTimeout(menuTimer);
-      clearTimeout(flashTimer);
+      amendT.clear();
+      waveT.clear();
+      menuT.clear();
+      flashT.clear();
     };
   });
 </script>
@@ -465,7 +491,7 @@
   </div>
 
   {#if round}
-    <p class="order">“{orderText}”</p>
+    <p class="order">“{paused ? '…' : orderText}”</p>
     {#if amendText}<p class="order amend">“{amendText}”</p>{/if}
 
     <MenuCard menu={session.menu} pricesHidden={menuHidden} {symbolFirst} />
@@ -514,7 +540,18 @@
     />
   {/if}
 
-  {#if dispute}
+  {#if paused}
+    <PauseOverlay
+      menu={pauseMenu}
+      soundOn={$settings.sound}
+      onresume={() => setPaused(false)}
+      onrestart={() => { setPaused(false); restart(); }}
+      ontogglesound={() => settings.update((s) => ({ ...s, sound: !s.sound }))}
+      allowRestart={!dispute}
+    />
+  {/if}
+
+  {#if dispute && !paused}
     <DisputeDialog
       claimText={$t('game.dispute-claim').replace('{note}', denomLabel(dispute.claimedNote))}
       question={$t('game.dispute-question')}
