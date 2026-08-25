@@ -169,3 +169,21 @@ describe('completeSubRound', () => {
     expect(s.roundLog[0].sub).toBe(true);
   });
 });
+
+describe('rush fast-spawn', () => {
+  it('caps the spawn cooldown when the queue empties after a served round', () => {
+    let s = createSession('rush', 1, DEFAULT_MENU, false, 7);
+    expect(s.spawnCooldownMs).toBeGreaterThan(1500); // sanity: normal cooldown is long
+    s = completeRound(s, winRound(s), { orderText: 'x', ms: 1000 });
+    expect(s.queue.length).toBe(0);
+    expect(s.spawnCooldownMs).toBeLessThanOrEqual(1500);
+  });
+  it('does not cap while other customers are still queued', () => {
+    let s = createSession('rush', 1, DEFAULT_MENU, false, 7);
+    s = spawnCustomer(s);
+    const before = s.spawnCooldownMs;
+    s = completeRound(s, winRound(s), { orderText: 'x', ms: 1000 });
+    expect(s.queue.length).toBe(1);
+    expect(s.spawnCooldownMs).toBe(before);
+  });
+});

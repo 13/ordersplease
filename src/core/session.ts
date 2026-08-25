@@ -157,6 +157,10 @@ export function completeRound(s: SessionState, round: RoundState, meta: RoundMet
     till: success ? round.till : s.till,
     roundLog: [...s.roundLog, entry],
   };
+  // rush: never leave the bar dead — if the queue just emptied, hurry the next customer
+  if (next.mode === 'rush' && next.queue.length === 0) {
+    next.spawnCooldownMs = Math.min(next.spawnCooldownMs, 1500);
+  }
   next = checkLost(next);
   if (next.finished === null && next.mode !== 'rush'
       && next.roundsDone >= next.params.ordersPerLevel) {
