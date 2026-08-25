@@ -4,7 +4,8 @@ export function keynav(node: HTMLElement) {
     return [...node.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
   }
   function cols(): number {
-    const v = getComputedStyle(node).getPropertyValue('--keynav-cols').trim();
+    const el = (document.activeElement as HTMLElement | null) ?? node;
+    const v = getComputedStyle(el).getPropertyValue('--keynav-cols').trim();
     return v ? Number(v) : 1;
   }
   function onKeydown(e: KeyboardEvent) {

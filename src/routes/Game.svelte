@@ -545,11 +545,18 @@
           <p class="prompt">
             {$t('game.pays')}:
             {#each [...round.paymentPieces].sort((a, b) => b - a) as p, i (i)}
-              <Money denom={p} />
+              <Money denom={p} interactive={false} />
             {/each}
           </p>
           <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} showKeys={hasKeyboard} />
           <ChangePile {pile} showTotal={session.params.showPileTotal} onreturn={ret} />
+          {#if askOpen}
+            <div class="ask-row">
+              {#each COIN_DENOMS as d (d)}
+                <button onclick={() => onAsk(d)}>{$t('game.ask-for')} {denomLabel(d)}?</button>
+              {/each}
+            </div>
+          {/if}
           <div class="actions">
             <button class="confirm" onclick={confirmChange}>
               {round.changeDue === 0 ? $t('game.finish') : $t('game.confirm')}
@@ -558,13 +565,6 @@
             <button class="ask" onclick={onNotEnough}>{$t('game.not-enough')}</button>
             <button class="tipp" onclick={onTipp}>{$t('game.tipp')}</button>
           </div>
-          {#if askOpen}
-            <div class="ask-row">
-              {#each COIN_DENOMS as d (d)}
-                <button onclick={() => onAsk(d)}>{$t('game.ask-for')} {denomLabel(d)}?</button>
-              {/each}
-            </div>
-          {/if}
         {/if}
       </div>
     {/key}
