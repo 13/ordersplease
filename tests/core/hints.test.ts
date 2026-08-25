@@ -30,6 +30,6 @@ describe('hintFor', () => {
     const till = { 200: 5 }; // only 2€ coins
     let r = createRound({ lines: [{ item: beer, qty: 2 }], totalCents: 800 }, [500, 200, 200, 50], till);
     r = submitSum(r, 800); // change 1,50 — 200-only till can't make it
-    expect(hintFor(r, 0, 'en')).toBe('The till can\'t make this — ask for a coin.');
+    expect(hintFor(r, 0, 'en')).toBe("The till can't make this — ask for a coin.");
   });
 });
