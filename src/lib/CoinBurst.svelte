@@ -34,7 +34,7 @@
     width: 22px; height: 22px; border-radius: 50%;
     background: radial-gradient(circle at 35% 35%, #f0c96a, #c9962e);
     border: 2px solid rgb(0 0 0 / 0.25);
-    pointer-events: none; z-index: 50;
+    pointer-events: none;
     animation: coin-burst 0.9s cubic-bezier(0.2, 0.6, 0.3, 1) both;
   }
   @keyframes coin-burst {
