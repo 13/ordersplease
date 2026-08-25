@@ -7,7 +7,8 @@ import { askOptions, canMakeChange } from './change';
 
 export type Phase = 'sum' | 'change' | 'done';
 export type RoundError =
-  | 'sum-wrong' | 'change-wrong' | 'shortage-missed' | 'parse-wrong' | 'timeout';
+  | 'sum-wrong' | 'change-wrong' | 'shortage-missed' | 'parse-wrong' | 'timeout'
+  | 'trap-missed' | 'dispute-wrong' | 'tab-wrong' | 'split-wrong';
 
 export const MAX_TRIES = 2;
 
