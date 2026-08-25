@@ -97,6 +97,13 @@
   let numpadLocked = $state(false);
   let numpadApi: NumpadApi | null = null;
   let hasKeyboard = $state(false); // becomes true on first physical keydown → shows badges
+  const wideQuery = matchMedia('(min-width: 700px)');
+  let wideScreen = $state(wideQuery.matches);
+  $effect(() => {
+    const on = (e: MediaQueryListEvent) => (wideScreen = e.matches);
+    wideQuery.addEventListener('change', on);
+    return () => wideQuery.removeEventListener('change', on);
+  });
   let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
   let payerIndex = $state(0);
   let mainEl = $state<HTMLElement | null>(null);
@@ -574,7 +581,7 @@
               <Money denom={p} interactive={false} />
             {/each}
           </p>
-          <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} showKeys={hasKeyboard} />
+          <TillGrid till={tillView} ontake={take} disabled={round.changeDue === 0} showKeys={hasKeyboard || wideScreen} />
           <ChangePile {pile} showTotal={session.params.showPileTotal} onreturn={ret} />
           {#if askOpen}
             <div class="ask-row">
