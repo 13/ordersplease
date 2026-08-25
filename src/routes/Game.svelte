@@ -11,7 +11,7 @@
     createSession, tickSession, completeRound, completeSubRound, spawnCustomer, MAX_LIVES,
   } from '../core/session';
   import type { SessionMode } from '../core/session';
-  import { practiceParams, paramsForLevel, type Skill } from '../core/difficulty';
+  import { practiceParams, paramsForLevel, type Skill, MAX_LEVEL } from '../core/difficulty';
   import {
     dailySeed, dailyLevelFor, DAILY_ORDERS, isRanked, nextDailyRecord, shareText,
   } from '../core/daily';
@@ -202,7 +202,7 @@
     const done = round;
     const ms = performance.now() - roundStartedAt;
     const failed = done.success !== true;
-    stats.update((s) => recordRound(s, done.errors, ms, failed));
+    stats.update((s) => recordDay(recordRound(s, done.errors, ms, failed), new Date()));
     flash = disputeVerdict !== null
       ? disputeVerdict
       : !failed
@@ -409,7 +409,7 @@
   <header>
     <span class="lives" class:pulse={heartPulse}>{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
     <span>{mode === 'level' ? `${$t('game.level')} ${level}`
-      : mode === 'rush' ? `${$t('game.rush')} · ${session.level}`
+      : mode === 'rush' ? `${$t('game.rush')} · ${session.level >= MAX_LEVEL ? '30+' : session.level}`
       : mode === 'practice' ? $t('practice.title')
       : $t('daily.title')}</span>
     <span>{$t('game.score')}: {session.score}</span>

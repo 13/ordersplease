@@ -8,6 +8,8 @@
   import Settings from './routes/Settings.svelte';
   import Practice from './routes/Practice.svelte';
   import { SKILL_ERROR, type Skill } from './core/difficulty';
+  import { settings } from './stores/settings';
+  import { progress, unlockedLevel } from './stores/progress';
 
   const gameLevel = $derived.by(() => {
     const m = $route.match(/^game\/(\d+)$/);
@@ -18,11 +20,17 @@
     const m = $route.match(/^practice\/([a-z]+)$/);
     return m && m[1] in SKILL_ERROR ? (m[1] as Skill) : null;
   });
+
+  $effect(() => {
+    document.documentElement.lang = $settings.locale;
+  });
 </script>
 
 {#key $route}
-  {#if gameLevel !== null}
+  {#if gameLevel !== null && gameLevel <= unlockedLevel($progress)}
     <Game mode="level" level={gameLevel} />
+  {:else if gameLevel !== null}
+    <Levels />
   {:else if $route === 'rush'}
     <Game mode="rush" />
   {:else if $route === 'levels'}
