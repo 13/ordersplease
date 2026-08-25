@@ -1,0 +1,32 @@
+import { describe, it, expect } from 'vitest';
+import { DEFAULT_MENU, validateItem, applyPriceStyle } from '$core/menu';
+
+describe('menu', () => {
+  it('default menu has the spec drinks', () => {
+    const byId = Object.fromEntries(DEFAULT_MENU.map((m) => [m.id, m.priceCents]));
+    expect(byId['beer']).toBe(400);
+    expect(byId['veneziano']).toBe(500);
+    expect(byId['water']).toBe(250);
+    expect(DEFAULT_MENU.length).toBeGreaterThanOrEqual(6);
+  });
+  it('all default prices are multiples of 5 cents', () => {
+    for (const m of DEFAULT_MENU) expect(m.priceCents % 5).toBe(0);
+  });
+  it('validates name and price', () => {
+    expect(validateItem('Beer', 400)).toBeNull();
+    expect(validateItem('', 400)).toBe('error.name-empty');
+    expect(validateItem('Beer', 0)).toBe('error.price-invalid');
+    expect(validateItem('Beer', 401)).toBe('error.price-invalid'); // not multiple of 5
+  });
+  it('applyPriceStyle rounds to style step', () => {
+    const menu = [{ id: 'x', name: 'X', priceCents: 430 }];
+    expect(applyPriceStyle(menu, 'round')[0].priceCents).toBe(400);
+    expect(applyPriceStyle(menu, 'half')[0].priceCents).toBe(450);
+    expect(applyPriceStyle(menu, 'tens')[0].priceCents).toBe(430);
+    expect(applyPriceStyle(menu, 'any')[0].priceCents).toBe(430);
+  });
+  it('applyPriceStyle never returns zero price', () => {
+    const menu = [{ id: 'x', name: 'X', priceCents: 40 }];
+    expect(applyPriceStyle(menu, 'round')[0].priceCents).toBe(100);
+  });
+});
