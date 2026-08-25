@@ -4,10 +4,10 @@
   import Numpad from './Numpad.svelte';
   import type { NumpadApi } from './Numpad.svelte';
 
-  let { locked, symbolFirst, onsum, ontipp, bindApi }: {
+  let { locked, symbolFirst, onsum, ontipp, bindApi, tippHint = '' }: {
     locked: boolean; symbolFirst: boolean;
     onsum: (cents: number) => void; ontipp: () => void;
-    bindApi: (api: NumpadApi) => void;
+    bindApi: (api: NumpadApi) => void; tippHint?: string;
   } = $props();
 </script>
 
@@ -16,7 +16,7 @@
 {:else}
   <p class="prompt">{$t('game.sum-prompt')}</p>
   <Numpad onsubmit={onsum} {symbolFirst} {bindApi} />
-  <button class="tipp" onclick={ontipp}>{$t('game.tipp')}</button>
+  <button class="tipp" onclick={ontipp}>{$t('game.tipp')}{tippHint}</button>
 {/if}
 
 <style>
