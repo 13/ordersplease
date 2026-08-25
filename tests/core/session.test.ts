@@ -212,3 +212,15 @@ describe('hint kills the first-try bonus', () => {
     expect(s.streak).toBe(0); // hinted round doesn't extend the streak
   });
 });
+
+describe('happy hour session roll', () => {
+  it('is deterministic for a fixed seed', () => {
+    const mk = () => createSession('level', 20, DEFAULT_MENU, false, 12345);
+    const a = mk(); const b = mk();
+    expect(a.happyHourStart).toEqual(b.happyHourStart);
+    expect(a.rng()).toBe(b.rng());
+  });
+  it('is null when the level is below the gate', () => {
+    expect(createSession('level', 5, DEFAULT_MENU, false, 1).happyHourStart).toBe(null);
+  });
+});
