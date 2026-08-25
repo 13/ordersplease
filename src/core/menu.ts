@@ -19,12 +19,12 @@ export const DEFAULT_MENU: MenuItem[] = [
 
 export function validateItem(name: string, priceCents: number): string | null {
   if (name.trim() === '') return 'error.name-empty';
-  if (!Number.isInteger(priceCents) || priceCents <= 0 || priceCents % 5 !== 0)
+  if (!Number.isInteger(priceCents) || priceCents <= 0 || priceCents % 10 !== 0)
     return 'error.price-invalid';
   return null;
 }
 
-const STEP: Record<PriceStyle, number> = { round: 100, half: 50, tens: 10, any: 5 };
+const STEP: Record<PriceStyle, number> = { round: 100, half: 50, tens: 10, any: 10 };
 
 /** Round menu prices to the difficulty's step. Used with the default menu only;
  *  custom menus keep real prices (priceStyle ignored by callers). */

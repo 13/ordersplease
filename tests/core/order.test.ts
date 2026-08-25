@@ -52,7 +52,7 @@ describe('generatePayment', () => {
     const rng = mulberry32(11);
     for (const style of ['exact-or-round', 'round', 'awkward'] as const) {
       for (let i = 0; i < 50; i++) {
-        const total = 5 * (1 + Math.floor(rng() * 2000)); // 0,05..100,00
+        const total = 10 * (1 + Math.floor(rng() * 1000)); // 0,10..100,00
         const pieces = generatePayment(total, style, rng);
         expect(piecesTotal(pieces)).toBeGreaterThanOrEqual(total);
       }
@@ -83,14 +83,14 @@ describe('generateUnderPayment', () => {
   it('always sums strictly below the total but above zero', () => {
     const rng = mulberry32(21);
     for (let i = 0; i < 100; i++) {
-      const total = 5 * (1 + Math.floor(rng() * 2000));
+      const total = 10 * (1 + Math.floor(rng() * 1000));
       const pieces = generateUnderPayment(total, rng);
       expect(piecesTotal(pieces)).toBeGreaterThanOrEqual(0);
       expect(piecesTotal(pieces)).toBeLessThan(total);
     }
   });
   it('minimum-denom total yields an empty (obviously short) payment', () => {
-    expect(generateUnderPayment(5, mulberry32(1))).toEqual([]);
+    expect(generateUnderPayment(10, mulberry32(1))).toEqual([]);
   });
 });
 

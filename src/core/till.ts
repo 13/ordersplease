@@ -1,6 +1,6 @@
-export const DENOMS = [5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5] as const;
+export const DENOMS = [5000, 2000, 1000, 500, 200, 100, 50, 20, 10] as const;
 export const NOTE_DENOMS = [5000, 2000, 1000, 500] as const;
-export const COIN_DENOMS = [200, 100, 50, 20, 10, 5] as const;
+export const COIN_DENOMS = [200, 100, 50, 20, 10] as const;
 export type Denom = number;
 export type Till = Record<number, number>;
 

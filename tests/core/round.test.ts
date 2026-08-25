@@ -63,7 +63,7 @@ describe('change failures and shortage', () => {
     expect(s.errors).toContain('change-wrong');
   });
   it('shortage: valid ask raises changeDue and payment', () => {
-    const till = { ...fullTill(), 100: 0, 50: 0, 20: 0, 10: 0, 5: 0 }; // only 2€ coins + notes
+    const till = { ...fullTill(), 100: 0, 50: 0, 20: 0, 10: 0 }; // only 2€ coins + notes
     let s = createRound(order2beer, [500, 500, 100], till); // pays 11,00 → change 3,00...
     s = submitSum(s, 800);
     expect(s.changeDue).toBe(300);
@@ -76,7 +76,7 @@ describe('change failures and shortage', () => {
     expect(s.till[100]).toBe(1 + 1); // customer's asked coin and the paid 1€ both landed in till
   });
   it('failing change without asking during shortage flags shortage-missed', () => {
-    const till = { ...fullTill(), 100: 0, 50: 0, 20: 0, 10: 0, 5: 0 };
+    const till = { ...fullTill(), 100: 0, 50: 0, 20: 0, 10: 0 };
     let s = createRound(order2beer, [500, 500, 100], till);
     s = submitSum(s, 800);
     s = submitChange(s, [200]);
@@ -92,7 +92,7 @@ describe('change failures and shortage', () => {
     expect(s.changeTries).toBe(1);
   });
   it('second ask is rejected and burns a change try', () => {
-    const till = { ...fullTill(), 100: 0, 50: 0, 20: 0, 10: 0, 5: 0 };
+    const till = { ...fullTill(), 100: 0, 50: 0, 20: 0, 10: 0 };
     let s = createRound(order2beer, [500, 500, 100], till);
     s = submitSum(s, 800);
     s = askCustomer(s, 100); // valid first ask

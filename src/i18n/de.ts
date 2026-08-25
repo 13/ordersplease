@@ -84,7 +84,7 @@ export default {
   'menu.add': 'Getränk hinzufügen',
   'menu.name': 'Name',
   'error.name-empty': 'Name darf nicht leer sein',
-  'error.price-invalid': 'Preis muss ein positives Vielfaches von 5 Cent sein',
+  'error.price-invalid': 'Preis muss ein positives Vielfaches von 10 Cent sein',
   'settings.title': 'Einstellungen',
   'settings.language': 'Sprache',
   'settings.sound': 'Ton',

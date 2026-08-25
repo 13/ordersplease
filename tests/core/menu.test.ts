@@ -16,7 +16,9 @@ describe('menu', () => {
     expect(validateItem('Beer', 400)).toBeNull();
     expect(validateItem('', 400)).toBe('error.name-empty');
     expect(validateItem('Beer', 0)).toBe('error.price-invalid');
-    expect(validateItem('Beer', 401)).toBe('error.price-invalid'); // not multiple of 5
+    expect(validateItem('Beer', 401)).toBe('error.price-invalid'); // not multiple of 10
+    expect(validateItem('Beer', 405)).toBe('error.price-invalid'); // 5-multiples now invalid
+    expect(validateItem('Beer', 410)).toBeNull();
   });
   it('applyPriceStyle rounds to style step', () => {
     const menu = [{ id: 'x', name: 'X', priceCents: 430 }];
@@ -28,6 +30,9 @@ describe('menu', () => {
   it('applyPriceStyle never returns zero price', () => {
     const menu = [{ id: 'x', name: 'X', priceCents: 40 }];
     expect(applyPriceStyle(menu, 'round')[0].priceCents).toBe(100);
+  });
+  it('applyPriceStyle "any" never rounds below the 10-cent minimum', () => {
+    expect(applyPriceStyle([{ id: 'x', name: 'X', priceCents: 4 }], 'any')[0].priceCents).toBe(10);
   });
 });
 

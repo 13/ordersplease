@@ -30,7 +30,7 @@ describe('createSession', () => {
   it('level 1: full till, one customer, half-step menu', () => {
     const s = freshSession();
     expect(s.queue.length).toBe(1);
-    expect(s.till[5]).toBeGreaterThan(0);
+    expect(s.till[10]).toBeGreaterThan(0);
     for (const m of s.menu) expect(m.priceCents % 50).toBe(0);
   });
   it('custom menu prices untouched', () => {

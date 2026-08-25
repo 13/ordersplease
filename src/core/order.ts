@@ -73,7 +73,7 @@ function smallestNoteAtLeast(amount: Cents): Denom {
   return asc[asc.length - 1];
 }
 
-/** Exact decomposition into denominations (always possible: amounts are 5c multiples). */
+/** Exact decomposition into denominations (always possible: amounts are 10c multiples). */
 function exactPieces(amount: Cents): Denom[] {
   const pieces: Denom[] = [];
   let remaining = amount;
@@ -99,7 +99,7 @@ export function generatePayment(
 
 /** Payment that is plausibly short: exact decomposition minus its largest piece,
  *  or (single-piece totals) the next denomination below.
- *  Contract: 0 <= sum < totalCents; the 5-cent minimum total yields an empty
+ *  Contract: 0 <= sum < totalCents; the 10-cent minimum total yields an empty
  *  (obviously short) payment. */
 export function generateUnderPayment(totalCents: Cents, rng: () => number): Denom[] {
   const pieces = exactPieces(totalCents);

@@ -84,7 +84,7 @@ export default {
   'menu.add': 'Add drink',
   'menu.name': 'Name',
   'error.name-empty': 'Name must not be empty',
-  'error.price-invalid': 'Price must be a positive multiple of 5 cents',
+  'error.price-invalid': 'Price must be a positive multiple of 10 cents',
   'settings.title': 'Settings',
   'settings.language': 'Language',
   'settings.sound': 'Sound',
