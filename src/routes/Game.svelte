@@ -37,11 +37,14 @@
   import { focusFirst } from '../lib/focus';
   import { chaChing, coinClink, errorBuzz, fanfare, tickTock } from '../lib/sound';
   import { PausableTimer } from '../lib/pausable';
+  import { canMakeChange } from '../core/change';
+  import { markSeen } from '../stores/seen';
   import Money from '../lib/Money.svelte';
   import EndOverlay from '../lib/EndOverlay.svelte';
   import CoinBurst from '../lib/CoinBurst.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
   import PauseOverlay from '../lib/PauseOverlay.svelte';
+  import ExplainerCard from '../lib/ExplainerCard.svelte';
   import Numpad from '../lib/Numpad.svelte';
   import type { NumpadApi } from '../lib/Numpad.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
@@ -94,6 +97,7 @@
   const waveT = new PausableTimer();
   let paused = $state(false);
   let pauseMenu = $state(false);
+  let explaining = $state<string | null>(null);
   let numpadLocked = $state(false);
   let numpadApi: NumpadApi | null = null;
   let hasKeyboard = $state(false); // becomes true on first physical keydown → shows badges
@@ -160,6 +164,7 @@
       round = createRound(tab.merged, makePayment(tab.merged.totalCents), session.till, 'tab');
       orderText = renderOrder(tab.waves[0], $settings.locale);
       numpadLocked = true;
+      maybeExplain('tab');
       let waveIdx = 1;
       const revealNext = () => {
         if (!round || round.phase !== 'sum') return;
@@ -180,6 +185,7 @@
         const sub = { lines: groups[0], totalCents: orderTotal(groups[0]) };
         round = createRound(sub, makePayment(sub.totalCents), session.till, 'split');
         groupBaseText = renderOrder(order, $settings.locale);
+        maybeExplain('split');
         orderText = `${groupBaseText} ${renderPayer(groups[0], $settings.locale)}`;
       } else {
         round = createRound(order, makePayment(order.totalCents), session.till);
@@ -211,6 +217,7 @@
     if (vis !== null && vis > 0) {
       menuT.start(() => (menuHidden = true), vis * 1000);
     }
+    if (round) maybeExplain('tipp');
   }
 
   function nextPayer() {
@@ -295,6 +302,10 @@
   function onSum(cents: number) {
     if (!round) return;
     round = submitSum(round, cents);
+    if (round.phase === 'change') {
+      if (round.paymentCents < round.order.totalCents) maybeExplain('trap');
+      else if (round.changeDue > 0 && !canMakeChange(round.till, round.changeDue)) maybeExplain('shortage');
+    }
     if (round.phase === 'done') finishRound();
     else if (round.sumTries > 0 && round.phase === 'sum') errorBuzz($settings.sound);
   }
@@ -319,6 +330,7 @@
           disputeOpts = disputeOptRoll < 0.5
             ? [d.actualNote, d.claimedNote]
             : [d.claimedNote, d.actualNote];
+          maybeExplain('dispute');
           return; // finishRound happens after the dispute is answered
         }
       }
@@ -400,6 +412,7 @@
     splitGroups = null;
     paused = false;
     pauseMenu = false;
+    explaining = null;
     startRound();
   }
 
@@ -454,10 +467,28 @@
     if (!on) tick().then(() => focusFirst(mainEl));
   }
 
+  function maybeExplain(id: string) {
+    if (!markSeen(id)) return;
+    explaining = id;
+    for (const tm of [amendT, menuT, flashT, waveT]) tm.pause();
+  }
+  function dismissExplain() {
+    explaining = null;
+    for (const tm of [amendT, menuT, flashT, waveT]) tm.resume();
+    focusFirst(mainEl);
+  }
+
   function onKey(e: KeyboardEvent) {
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
     const k = e.key;
+    if (explaining) {
+      if (k === 'Enter' || k === ' ' || k === 'Escape') {
+        dismissExplain();
+        e.preventDefault();
+      }
+      return;
+    }
     if (k === 'Escape') {
       if (askOpen) {
         askOpen = false;
@@ -521,6 +552,7 @@
       }
       if (dispute) return; // freeze the bar while the customer disputes
       if (paused) return;
+      if (explaining) return;
       // head walking out during a live round = that round times out (see rules above)
       if (!dispute && round && session.queue[0] && session.queue[0].patienceMs <= dt) {
         round = timeoutRound(round);
@@ -638,6 +670,14 @@
     />
   {/if}
 
+  {#if explaining}
+    <ExplainerCard
+      title={$t(`explain.${explaining}.title`)}
+      body={$t(`explain.${explaining}.body`)}
+      ondismiss={dismissExplain}
+    />
+  {/if}
+
   {#if paused}
     <PauseOverlay
       menu={pauseMenu}
@@ -649,7 +689,7 @@
     />
   {/if}
 
-  {#if dispute && !paused}
+  {#if dispute && !paused && !explaining}
     <DisputeDialog
       claimText={$t('game.dispute-claim').replace('{note}', denomLabel(dispute.claimedNote))}
       question={$t('game.dispute-question')}
