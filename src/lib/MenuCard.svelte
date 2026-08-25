@@ -10,7 +10,7 @@
 </script>
 
 <section class="card" class:collapsed>
-  <button class="head" onclick={() => (collapsed = !collapsed)}>
+  <button class="head" aria-expanded={!collapsed} onclick={() => (collapsed = !collapsed)}>
     Menu {collapsed ? '▾' : '▴'}
   </button>
   {#if !collapsed}
