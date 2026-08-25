@@ -27,6 +27,7 @@
   </label>
   <label><input type="checkbox" bind:checked={$settings.sound} /> {$t('settings.sound')}</label>
   <label><input type="checkbox" bind:checked={$settings.symbolFirst} /> {$t('settings.symbol-first')}</label>
+  <label><input type="checkbox" bind:checked={$settings.alwaysShowPrices} /> {$t('settings.show-prices')}</label>
 
   <button class="danger" onclick={resetAll}>{$t('settings.reset')}</button>
 </main>

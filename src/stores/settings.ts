@@ -5,8 +5,9 @@ export interface Settings {
   sound: boolean;
   symbolFirst: boolean;
   useCustomMenu: boolean;
+  alwaysShowPrices: boolean;
 }
 
 export const settings = persisted<Settings>('op.settings', {
-  locale: 'en', sound: true, symbolFirst: false, useCustomMenu: false,
+  locale: 'en', sound: true, symbolFirst: false, useCustomMenu: false, alwaysShowPrices: false,
 });

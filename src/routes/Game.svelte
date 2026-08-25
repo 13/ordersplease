@@ -221,9 +221,13 @@
 
     const vis = session.params.menuVisibleSeconds;
     menuT.clear();
-    menuHidden = vis === 0;
-    if (vis !== null && vis > 0) {
-      menuT.start(() => (menuHidden = true), vis * 1000);
+    if (get(settings).alwaysShowPrices) {
+      menuHidden = false;
+    } else {
+      menuHidden = vis === 0;
+      if (vis !== null && vis > 0) {
+        menuT.start(() => (menuHidden = true), vis * 1000);
+      }
     }
     if (round && !explaining) maybeExplain('tipp');
   }
@@ -627,6 +631,7 @@
       : mode === 'rush' ? `${$t('game.rush')} · ${session.level >= MAX_LEVEL ? '30+' : session.level}`
       : mode === 'practice' ? $t('practice.title')
       : $t('daily.title')}</span>
+    {#if session.streak >= 3}<span class="flame">🔥{session.streak}</span>{/if}
     <span>{$t('game.score')}: {session.score}</span>
   </header>
 
@@ -742,6 +747,7 @@
   header { display: flex; justify-content: space-between; align-items: center; }
   .lives { color: var(--danger); }
   .lives.pulse { animation: op-pulse 0.5s ease-in-out; }
+  .flame { color: var(--accent); font-weight: bold; animation: op-pop 0.3s ease-out; }
   .queue { display: flex; gap: 0.75rem; min-height: 40px; }
   .customer { width: 64px; opacity: 0.5; }
   .customer.active { opacity: 1; }

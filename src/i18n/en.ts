@@ -105,6 +105,7 @@ export default {
   'settings.language': 'Language',
   'settings.sound': 'Sound',
   'settings.symbol-first': '€ before amount',
+  'settings.show-prices': 'Always show prices',
   'settings.reset': 'Reset all progress',
   'settings.reset-confirm': 'Really delete all progress and stats?',
   'level.name.1': 'First Shift',

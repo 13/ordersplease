@@ -105,6 +105,7 @@ export default {
   'settings.language': 'Sprache',
   'settings.sound': 'Ton',
   'settings.symbol-first': '€ vor dem Betrag',
+  'settings.show-prices': 'Preise immer zeigen',
   'settings.reset': 'Fortschritt zurücksetzen',
   'settings.reset-confirm': 'Wirklich allen Fortschritt und alle Statistiken löschen?',
   'level.name.1': 'Erste Schicht',
