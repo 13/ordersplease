@@ -29,8 +29,8 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      $core: path.resolve(__dirname, 'src/core'),
-      $lib: path.resolve(__dirname, 'src/lib'),
+      $core: path.resolve(import.meta.dirname, 'src/core'),
+      $lib: path.resolve(import.meta.dirname, 'src/lib'),
     },
   },
   test: {
