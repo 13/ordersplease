@@ -194,6 +194,7 @@ export default {
   'tutorial.wrong-sum': 'Not quite — check the menu prices again. The total is {total}.',
   'tutorial.wrong-change': 'That pile is not right — the change due is {change}. Try again.',
   'tutorial.ask-hint': 'Ask for the coin that would make the change work: 50 cents.',
+  'tutorial.need-ask': "The till can't make this change — press Ask first.",
   'tutorial.done-title': 'Ready for your first shift!',
   'tutorial.done-body': 'You can sum orders, give change, and handle a coin shortage. The real bar also has timers, tips and trickier customers.',
   'tutorial.done-cta': 'Start level 1',

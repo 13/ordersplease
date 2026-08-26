@@ -194,6 +194,7 @@ export default {
   'tutorial.wrong-sum': 'Nicht ganz — schau nochmal auf die Karte. Die Summe ist {total}.',
   'tutorial.wrong-change': 'Der Stapel stimmt nicht — das Rückgeld ist {change}. Versuch es nochmal.',
   'tutorial.ask-hint': 'Bitte um die Münze, mit der das Rückgeld klappt: 50 Cent.',
+  'tutorial.need-ask': 'Die Kasse kann das nicht passend geben — drück zuerst Fragen.',
   'tutorial.done-title': 'Bereit für die erste Schicht!',
   'tutorial.done-body': 'Du kannst Bestellungen addieren, Rückgeld geben und mit Münzmangel umgehen. In der echten Bar gibt es dazu Zeitdruck, Trinkgeld und kniffligere Gäste.',
   'tutorial.done-cta': 'Level 1 starten',

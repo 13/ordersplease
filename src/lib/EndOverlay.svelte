@@ -102,7 +102,7 @@
 <style>
   .overlay {
     position: fixed; inset: 0; background: rgb(0 0 0 / 0.75);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; justify-content: safe center;
     gap: 0.75rem; text-align: center; padding: 1rem;
     overflow-y: auto;
   }
