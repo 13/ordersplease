@@ -23,6 +23,6 @@
 
 <style>
   .prompt { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: baseline; }
-  .tipp { background: var(--wood-light); color: var(--cream); }
+  .tipp { background: var(--wood-light); color: var(--cream); border-radius: 10px; }
   .tipp kbd { background: var(--cream); color: var(--ink); border-radius: 3px; padding: 0 4px; font-size: 0.7rem; margin-right: 2px; }
 </style>

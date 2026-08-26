@@ -45,11 +45,13 @@
   <button class="confirm" onclick={onconfirm}>
     <kbd>⏎</kbd> {finishMode ? $t('game.finish') : $t('game.confirm')}
   </button>
-  <button class="ask" onclick={ontoggleask}><kbd>A</kbd> {$t('game.ask')}</button>
-  {#if showExtras}
-    <button class="ask" onclick={onnotenough}><kbd>N</kbd> {$t('game.not-enough')}</button>
-    <button class="tipp" onclick={ontipp}><kbd>T</kbd> {$t('game.tipp')}{tippHint}</button>
-  {/if}
+  <div class="secondary">
+    <button class="ask" onclick={ontoggleask}><kbd>A</kbd> {$t('game.ask')}</button>
+    {#if showExtras}
+      <button class="ask" onclick={onnotenough}><kbd>N</kbd> {$t('game.not-enough')}</button>
+      <button class="tipp" onclick={ontipp}><kbd>T</kbd> {$t('game.tipp')}{tippHint}</button>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -63,17 +65,28 @@
   }
   .typed small { font-weight: normal; font-size: 0.7rem; opacity: 0.7; }
   .actions {
-    display: flex; gap: 0.5rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
     position: sticky; bottom: 0;
     padding: var(--space-2) 0 calc(var(--space-2) + env(safe-area-inset-bottom));
     background: var(--wood);
   }
-  .confirm { flex: 1; background: var(--ok); color: var(--cream); font-size: 1.1rem; }
+  .confirm {
+    background: var(--ok); color: var(--cream); font-size: 1.1rem; font-weight: bold;
+    padding: 0.7rem; border-radius: 12px;
+  }
+  .secondary { display: flex; gap: 0.5rem; align-items: stretch; }
+  .ask, .tipp {
+    flex: 1; min-width: 0;
+    font-size: 0.8rem; line-height: 1.15; padding: 0.5rem 0.3rem; border-radius: 10px;
+  }
   .ask { background: var(--accent); color: var(--ink); }
+  .tipp { background: var(--wood-light); color: var(--cream); }
   .ask-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .ask-row button { background: var(--wood-light); color: var(--cream); }
   .ask-row kbd { background: var(--cream); color: var(--ink); border-radius: 3px; padding: 0 4px; font-size: 0.7rem; margin-right: 2px; }
-  .tipp { background: var(--wood-light); color: var(--cream); }
-  .confirm kbd, .ask kbd, .tipp kbd { background: var(--cream); color: var(--ink); border-radius: 3px; padding: 0 4px; font-size: 0.7rem; margin-right: 2px; }
+  .confirm kbd, .ask kbd, .tipp kbd {
+    background: var(--cream); color: var(--ink); border-radius: 3px;
+    padding: 0 4px; font-size: 0.7rem; margin-right: 3px;
+  }
   .confirm kbd { background: rgb(255 255 255 / 0.85); }
 </style>

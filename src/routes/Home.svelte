@@ -72,9 +72,9 @@
   .tiles span { font-size: 0.7rem; opacity: 0.7; }
   .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
   .row .minor {
-    min-width: 0; background: none; color: var(--cream);
-    border: 1px solid var(--wood-light); font-size: 0.8rem;
-    padding: var(--space-2) var(--space-1);
-    overflow-wrap: anywhere; hyphens: auto;
+    min-width: 0; min-height: 52px; background: none; color: var(--cream);
+    border: 1px solid var(--wood-light); border-radius: 10px; font-size: 0.78rem;
+    line-height: 1.2; padding: var(--space-2) var(--space-1);
+    word-break: normal; overflow-wrap: anywhere;
   }
 </style>

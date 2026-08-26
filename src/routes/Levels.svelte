@@ -46,8 +46,8 @@
   .num { font-size: 1.2rem; font-weight: bold; }
   .stars { color: var(--accent); font-size: 0.8rem; min-height: 1em; }
   .lname {
-    font-size: 0.55rem; opacity: 0.75; line-height: 1.1; text-align: center;
-    overflow-wrap: anywhere; hyphens: auto;
+    font-size: 0.55rem; opacity: 0.75; line-height: 1.15; text-align: center;
+    word-break: normal; overflow-wrap: anywhere;
   }
   .best { font-size: 0.6rem; color: var(--accent); font-variant-numeric: tabular-nums; }
   .tut { border: 1px dashed var(--accent); }
