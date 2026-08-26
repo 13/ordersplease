@@ -935,7 +935,7 @@
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
   .flash {
     position: fixed; inset: 20% 0 auto 0; margin: 0 auto; width: fit-content;
-    background: linear-gradient(180deg, var(--cream), #e8dcc0);
+    background: linear-gradient(180deg, var(--cream), var(--cream-2));
     color: var(--ink);
     padding: 0.75rem 1.5rem; border-radius: 14px;
     font-size: 1.15rem; font-weight: bold;

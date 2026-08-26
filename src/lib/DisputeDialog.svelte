@@ -36,7 +36,7 @@
   .claim { font-size: 1.3rem; font-style: italic; color: var(--accent); }
   .choices { display: flex; gap: 0.75rem; }
   .choices button {
-    background: linear-gradient(180deg, var(--cream), #e8dcc0);
+    background: linear-gradient(180deg, var(--cream), var(--cream-2));
     color: var(--ink);
     font-size: 1.2rem; font-weight: bold; padding: 0.75rem 1.5rem;
     border-radius: 14px;

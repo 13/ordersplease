@@ -2,6 +2,7 @@
   --wood: #2b1d12;
   --wood-light: #4a3320;
   --cream: #f5ecd7;
+  --cream-2: #e8dcc0;
   --ink: #2a2118;
   --accent: #d99a2b;
   --danger: #c0392b;
@@ -59,6 +60,7 @@ button:active { transform: scale(0.97); }
 }
 :root[data-theme='light'] {
   --wood: #f2e7d0;
+  --cream-2: #46362a;
   --wood-light: #e0cba6;
   --cream: #3a2c1c;
   --ink: #f7f1e3;
