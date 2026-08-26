@@ -26,7 +26,8 @@
   });
 
   const onGameRoute = $derived(
-    gameLevel !== null || $route === 'rush' || $route === 'daily' || practiceSkill !== null,
+    gameLevel !== null || $route === 'rush' || $route === 'daily' || $route === 'weekly'
+      || practiceSkill !== null,
   );
 
   function onEsc(e: KeyboardEvent) {
@@ -73,6 +74,8 @@
     <Practice />
   {:else if $route === 'daily'}
     <Game mode="daily" />
+  {:else if $route === 'weekly'}
+    <Game mode="weekly" />
   {:else if $route === 'tutorial'}
     <Tutorial />
   {:else}

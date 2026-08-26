@@ -7,6 +7,7 @@ import { mulberry32 } from './order';
 import type { RoundState, RoundError } from './round';
 import { scoreRound } from './scoring';
 import { dailyLevelFor } from './daily';
+import { weeklyLevelFor } from './weekly';
 import { rollHappyHourStart } from './happy-hour';
 
 export interface Customer { id: number; patienceMs: number; maxPatienceMs: number; }
@@ -15,7 +16,7 @@ export const MAX_LIVES = 3;
 const QUEUE_CAP = 3;
 const WAITING_DRAIN_RATE = 0.5;
 
-export type SessionMode = 'level' | 'rush' | 'practice' | 'daily';
+export type SessionMode = 'level' | 'rush' | 'practice' | 'daily' | 'weekly';
 
 export interface RoundLogEntry {
   orderText: string;
@@ -124,7 +125,9 @@ export function tickSession(s: SessionState, dtMs: number): SessionState {
 
 /** The level that gates content (food) right now. */
 export function effectiveLevel(s: SessionState): number {
-  return s.mode === 'daily' ? dailyLevelFor(s.roundsDone) : s.level;
+  if (s.mode === 'daily') return dailyLevelFor(s.roundsDone);
+  if (s.mode === 'weekly') return weeklyLevelFor(s.roundsDone);
+  return s.level;
 }
 
 export function patienceFrac(s: SessionState): number {
@@ -174,12 +177,12 @@ export function completeRound(s: SessionState, round: RoundState, meta: RoundMet
       && next.roundsDone >= next.params.ordersPerLevel) {
     next.finished = 'won';
   }
-  if (next.finished === null && next.mode === 'daily') {
-    // ramp difficulty but keep the caller's fixed order count (DAILY_ORDERS)
-    next.params = {
-      ...paramsForLevel(dailyLevelFor(next.roundsDone)),
-      ordersPerLevel: next.params.ordersPerLevel,
-    };
+  if (next.finished === null && (next.mode === 'daily' || next.mode === 'weekly')) {
+    // ramp difficulty but keep the caller's fixed order count (DAILY_ORDERS / WEEKLY_ORDERS)
+    const lvl = next.mode === 'daily'
+      ? dailyLevelFor(next.roundsDone)
+      : weeklyLevelFor(next.roundsDone);
+    next.params = { ...paramsForLevel(lvl), ordersPerLevel: next.params.ordersPerLevel };
   }
   return next;
 }

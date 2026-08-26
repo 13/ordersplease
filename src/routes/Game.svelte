@@ -18,6 +18,8 @@
     dailySeed, dailyLevelFor, DAILY_ORDERS, isRanked, nextDailyRecord, shareText,
   } from '../core/daily';
   import { daily } from '../stores/daily';
+  import { weeklySeed, weeklyLevelFor, WEEKLY_ORDERS, nextWeeklyRecord, weeklyShareText } from '../core/weekly';
+  import { weekly } from '../stores/weekly';
   import { badges } from '../stores/badges';
   import {
     createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment, markHint,
@@ -66,10 +68,14 @@
       ? practiceParams(skill)
       : mode === 'daily'
         ? { ...paramsForLevel(dailyLevelFor(0)), ordersPerLevel: DAILY_ORDERS }
-        : undefined;
-    const seed = mode === 'daily' ? dailySeed(new Date()) : Date.now() % 2 ** 31;
+        : mode === 'weekly'
+          ? { ...paramsForLevel(weeklyLevelFor(0)), ordersPerLevel: WEEKLY_ORDERS }
+          : undefined;
+    const seed = mode === 'daily' ? dailySeed(new Date())
+      : mode === 'weekly' ? weeklySeed(new Date())
+      : Date.now() % 2 ** 31;
     rankedRun = mode === 'daily' ? isRanked(get(daily), new Date()) : false;
-    const isDaily = mode === 'daily';
+    const isDaily = mode === 'daily' || mode === 'weekly';
     return createSession(
       mode, level,
       isDaily ? localizedDefaultMenu(get(settings).locale) : get(activeMenu),
@@ -302,7 +308,7 @@
     const groupTotal = splitGroups
       ? splitGroups.reduce((s, g) => s + orderTotal(g), 0)
       : done.order.totalCents;
-    const earnsTip = (mode === 'level' || mode === 'rush' || mode === 'daily')
+    const earnsTip = (mode === 'level' || mode === 'rush' || mode === 'daily' || mode === 'weekly')
       && tipEligible({
         success: done.success === true,
         firstTry: done.sumTries === 0 && done.changeTries === 0,
@@ -567,6 +573,9 @@
       const perfect = fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success);
       daily.update((prev) => nextDailyRecord(prev, new Date(), session.score, perfect));
     }
+    if (session.mode === 'weekly') {
+      weekly.update((prev) => nextWeeklyRecord(prev, new Date(), session.score));
+    }
     bigWin = (session.mode === 'level' && session.finished === 'won' && stars === 3)
       || (session.mode === 'rush' && wasNewHigh)
       || (session.mode === 'daily'
@@ -599,9 +608,9 @@
 
   function doShare() {
     const served = session.roundLog.filter((e) => !e.sub && e.success).length;
-    const text = shareText(
-      new Date(), session.score, served, DAILY_ORDERS, get(daily)?.streak ?? 1,
-    );
+    const text = session.mode === 'weekly'
+      ? weeklyShareText(new Date(), session.score, served, WEEKLY_ORDERS)
+      : shareText(new Date(), session.score, served, DAILY_ORDERS, get(daily)?.streak ?? 1);
     navigator.clipboard?.writeText(text).then(() => (shareCopied = true)).catch(() => {});
   }
 
@@ -761,6 +770,7 @@
     <span>{mode === 'level' ? `${level} · ${$t(`level.name.${level}`)}`
       : mode === 'rush' ? `${$t('game.rush')} · ${session.level >= MAX_LEVEL ? '30+' : session.level}`
       : mode === 'practice' ? $t('practice.title')
+      : mode === 'weekly' ? $t('weekly.title')
       : $t('daily.title')}</span>
     {#if session.streak >= 3}<span class="flame">🔥{session.streak}</span>{/if}
     {#if tipJar > 0}<span class="jar">🫙 {formatEuro(tipJar, symbolFirst)}</span>{/if}
@@ -829,7 +839,7 @@
   {#if session.finished && finalized}
     <EndOverlay
       {session} {level} {stars} {wasNewHigh} onretry={restart}
-      onshare={mode === 'daily' ? doShare : null}
+      onshare={mode === 'daily' || mode === 'weekly' ? doShare : null}
       shareLabel={shareCopied ? $t('daily.copied') : $t('daily.share')}
       note={mode === 'daily' && !rankedRun ? $t('daily.unranked') : null}
       levelName={mode === 'level' ? $t(`level.name.${level}`) : null}

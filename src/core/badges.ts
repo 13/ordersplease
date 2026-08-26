@@ -6,7 +6,7 @@ export const BADGE_IDS = [
 export type BadgeId = (typeof BADGE_IDS)[number];
 
 export interface BadgeContext {
-  mode: 'level' | 'rush' | 'practice' | 'daily';
+  mode: 'level' | 'rush' | 'practice' | 'daily' | 'weekly';
   finished: 'won' | 'lost' | null;
   stars: number;
   level: number;
@@ -24,7 +24,7 @@ export function newBadges(ctx: BadgeContext, owned: readonly string[]): BadgeId[
   const earned = new Set<BadgeId>();
   const levelWon = ctx.mode === 'level' && ctx.finished === 'won';
   const anyWin = levelWon
-    || (ctx.mode === 'daily' && ctx.finished === 'won')
+    || ((ctx.mode === 'daily' || ctx.mode === 'weekly') && ctx.finished === 'won')
     || (ctx.mode === 'rush' && ctx.maxStreak >= 1);
 
   if (anyWin && ctx.mode !== 'practice') earned.add('first-win');
