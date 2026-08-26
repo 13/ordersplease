@@ -11,8 +11,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -25,16 +25,20 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: test
     runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       contents: read
       pages: write
       id-token: write
+      actions: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -42,6 +46,14 @@ jobs:
       - run: npm run build
         env:
           OP_BASE: /ordersplease/
+      - name: Drop stale pages artifacts (reruns upload a duplicate otherwise)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for id in $(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
+              -q '.artifacts[] | select(.name=="github-pages") | .id'); do
+            gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"
+          done
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
