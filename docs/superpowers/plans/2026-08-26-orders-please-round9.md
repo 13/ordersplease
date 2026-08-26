@@ -550,3 +550,18 @@ NOTE the light theme SWAPS the roles: `--wood*` become light surfaces, `--cream`
 
 - All gates green incl. e2e; CI smoke passes on the PR/branch push.
 - Manual: buy jar-xl → tips visibly +10% in a level, wallet drops; daily/weekly unaffected; light mode readable everywhere incl. money chips, flash, numpad; font 130% doesn't break the till grid; left-hand mirrors the action row + numpad; calendar shows the current month with played days; weekly code round-trips between two browser profiles; badge wall shows 20 tiles.
+
+---
+
+### Task 12 (added mid-round): pause menu redesign
+
+**Files:**
+- Modify: `src/lib/PauseOverlay.svelte`
+
+Modern, intuitive pause card with a coherent (emoji, matching the app's established icon language) icon per action:
+
+- Card container replacing the loose column: `.card { background: var(--wood-light); border-radius: 16px; padding: 1rem; box-shadow: 0 12px 32px rgb(0 0 0 / 0.5); width: min(320px, 92vw); display: flex; flex-direction: column; gap: 0.5rem; }` inside the existing blurred `.pause` backdrop; `h2` stays above the card.
+- Action buttons become icon+label rows (icon left, label left-aligned, full width): ▶️ Resume, 🔄 Restart, 🏠 Main menu — `.menu-actions button { display: flex; align-items: center; gap: 0.6rem; text-align: left; }` with the icon in a fixed-width span `.ico { width: 1.6rem; text-align: center; }`. Existing keynav + callbacks unchanged; the standalone sound button MOVES into the quick block (drop the `ontogglesound`-based button row; the quick block binds `$settings.sound` directly as a checkbox — the Game-side prop/callback contract may remain passed but unused; if svelte-check flags unused props, remove `soundOn`/`ontogglesound` from BOTH PauseOverlay's props and Game's usage).
+- Quick-settings block restyled to match: each row icon+label+control — 🔊 sound checkbox, 🎚 volume slider (when sound on), 💶 always-show-prices, ⌨️ classic amount entry, 📳 vibration, plus the theme checkbox once Task 4 landed (☀️ light mode). Section keeps its `pause.settings` heading, smaller caps style stays.
+- All existing i18n keys reused; no new strings except none. Focus behavior (focusFirst on mount → Resume) must keep working; keynav still on `.menu-actions` only.
+- Gates: suite green, check 0/0, build clean. Commit: `feat: pause menu becomes a card with iconed actions`

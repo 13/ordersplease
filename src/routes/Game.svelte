@@ -18,7 +18,7 @@
     dailySeed, dailyLevelFor, DAILY_ORDERS, isRanked, nextDailyRecord, shareText,
   } from '../core/daily';
   import { daily } from '../stores/daily';
-  import { weeklySeed, weeklyLevelFor, WEEKLY_ORDERS, nextWeeklyRecord, weeklyShareText } from '../core/weekly';
+  import { weeklySeed, weeklyLevelFor, WEEKLY_ORDERS, nextWeeklyRecord, weeklyShareText, weekKey } from '../core/weekly';
   import { weekly } from '../stores/weekly';
   import { badges } from '../stores/badges';
   import {
@@ -39,6 +39,11 @@
   import { happyHourActive, discountMenu } from '../core/happy-hour';
   import { tipFor, tipEligible } from '../core/tips';
   import { history, recordDayEntry, pruneHistory, localDayKey } from '../stores/history';
+  import { weeklyHistory } from '../stores/weekly-history';
+  import { encodeResult } from '../core/compare';
+  import { careerTitle, applyUpgrades, boostTip, freeFirstHint } from '../core/career';
+  import { career } from '../stores/career';
+  import type { DifficultyParams } from '../core/difficulty';
   import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
   import { focusFirst } from '../lib/focus';
@@ -48,6 +53,7 @@
   import { canMakeChange, makeChange } from '../core/change';
   import { markSeen } from '../stores/seen';
   import EndOverlay from '../lib/EndOverlay.svelte';
+  import GameToasts from '../lib/GameToasts.svelte';
   import CoinBurst from '../lib/CoinBurst.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
   import PauseOverlay from '../lib/PauseOverlay.svelte';
@@ -78,11 +84,13 @@
       : Date.now() % 2 ** 31;
     rankedRun = mode === 'daily' ? isRanked(get(daily), new Date()) : false;
     const isDaily = mode === 'daily' || mode === 'weekly';
+    const upgraded = (p: DifficultyParams) => applyUpgrades(p, get(career).upgrades, mode);
     return createSession(
       mode, level,
       isDaily ? localizedDefaultMenu(get(settings).locale) : get(activeMenu),
       isDaily ? false : get(settings).useCustomMenu,
-      seed, override,
+      seed,
+      override ? upgraded(override) : mode === 'level' ? upgraded(paramsForLevel(level)) : undefined,
     );
   }
   let session = $state(newSession());
@@ -132,6 +140,7 @@
   let rowdy = $state(false);
   let tipJar = $state(0);
   let tipsEarnedSession = 0;
+  let hintsUsedSession = 0;
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -334,10 +343,11 @@
     }
     rowdy = false;
     if (earnsTip) {
-      const tip = tipFor(groupTotal);
+      const tip = boostTip(tipFor(groupTotal), get(career).upgrades, mode);
       tipJar += tip;
       tipsEarnedSession += tip;
       stats.update((s) => recordTips(s, tip));
+      career.update((c) => ({ ...c, walletCents: c.walletCents + tip }));
     }
     if (hintDebt > 0) {
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
@@ -369,6 +379,8 @@
     waveT.clear();
     menuT.clear();
     flashT.clear();
+    errorFlash = null;
+    errT.clear();
     flashT.start(() => {
       flash = null;
       startRound();
@@ -449,7 +461,11 @@
     round = markHint(round);
     hintText = hintFor(round, hintIndex, $settings.locale);
     hintIndex += 1;
-    if (tipJar >= 50) tipJar -= 50;
+    const free = hintsUsedSession === 0 && freeFirstHint(get(career).upgrades, mode);
+    hintsUsedSession += 1;
+    if (free) {
+      // first hint of the shift: no jar deduction, no debt
+    } else if (tipJar >= 50) tipJar -= 50;
     else hintDebt += 25;
   }
 
@@ -553,6 +569,7 @@
     rowdy = false;
     tipJar = 0;
     tipsEarnedSession = 0;
+    hintsUsedSession = 0;
     startRound();
   }
 
@@ -581,6 +598,10 @@
     }
     if (session.mode === 'weekly') {
       weekly.update((prev) => nextWeeklyRecord(prev, new Date(), session.score));
+      // Update weekly history archive with this week's best score (used by the
+      // Stats calendar's weekly archive list and friend-compare lookup).
+      const week = weekKey(new Date());
+      weeklyHistory.update((h) => ({ ...h, [week]: Math.max(h[week] ?? 0, session.score) }));
     }
     bigWin = (session.mode === 'level' && session.finished === 'won' && stars === 3)
       || (session.mode === 'rush' && wasNewHigh)
@@ -588,11 +609,27 @@
           && fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success));
     if (bigWin) fanfare($settings.sound);
 
+    // Calculate career progress for badge checking
+    const progressData = get(progress);
+    const threeStarLevels = Object.values(progressData.stars).filter((s) => s === 3).length;
+    const totalStars = Object.values(progressData.stars).reduce((a, b) => a + b, 0);
+    const maxLevelWon = Object.keys(progressData.stars).length > 0 ? Math.max(...Object.keys(progressData.stars).map(Number)) : 0;
+    const statsData = get(stats);
+    const titleRankValue = careerTitle(totalStars, maxLevelWon);
+    const titleRankMap: Record<string, number> = { aushilfe: 0, barkeeper: 1, schichtleiter: 2, wirt: 3, legende: 4 };
+    const titleRank = titleRankMap[titleRankValue];
+    const weeklyWeeks = Object.keys(get(weeklyHistory)).length;
+
     const got = newBadges({
       mode: session.mode, finished: session.finished, stars, level,
       maxStreak, trapCaught, disputeWon, tabServed, splitServed,
       elapsedMs: session.elapsedMs,
       dailyStreak: get(daily)?.streak ?? 0,
+      weeklyWeeks,
+      lifetimeTips: statsData.tipsEarnedCents ?? 0, // cents — badge thresholds are in cents
+      lifetimeRounds: statsData.rounds,
+      threeStarLevels,
+      titleRank,
     }, get(badges));
     if (got.length > 0) {
       badges.update((b) => [...b, ...got]);
@@ -838,6 +875,7 @@
             tippHint={tipJar >= 50 ? ` (${formatEuro(50, symbolFirst)})` : ' (−25)'}
             typedDisplay={typedChange === '' ? '' : formatEuro(parseEntry(typedChange), symbolFirst)}
             typedHint={$settings.amountEntry ? $t('game.typed-hint') : $t('game.typed-hint-piece')}
+            leftHand={$settings.leftHand ?? false}
           />
         {/if}
       </div>
@@ -846,8 +884,7 @@
 
   <CoinBurst {burstKey} />
 
-  {#if flash}<div class="flash">{flash}</div>{/if}
-  {#if errorFlash}<div class="flash err-flash">{errorFlash}</div>{/if}
+  <GameToasts {flash} {errorFlash} />
 
   {#if session.finished && finalized}
     <EndOverlay
@@ -857,10 +894,11 @@
       note={mode === 'daily' && !rankedRun ? $t('daily.unranked') : null}
       levelName={mode === 'level' ? $t(`level.name.${level}`) : null}
       celebrate={bigWin}
+      compareCode={mode === 'weekly' ? encodeResult({ week: weekKey(new Date()), score: session.score }) : null}
     />
   {/if}
 
-  {#if badgeToast}<div class="flash badge-toast">{badgeToast}</div>{/if}
+  {#if badgeToast}<div class="badge-toast">{badgeToast}</div>{/if}
 
   {#if explaining}
     <ExplainerCard
@@ -873,10 +911,8 @@
   {#if paused}
     <PauseOverlay
       menu={pauseMenu}
-      soundOn={$settings.sound}
       onresume={() => setPaused(false)}
       onrestart={() => { setPaused(false); restart(); }}
-      ontogglesound={() => settings.update((s) => ({ ...s, sound: !s.sound }))}
       allowRestart={!dispute}
     />
   {/if}
@@ -908,21 +944,17 @@
   .customer.active { opacity: 1; }
   .face { font-size: 1.4rem; }
   .order { font-size: 1.15rem; font-style: italic; }
-  .flash { animation: op-slide-up 0.2s ease-out; }
   .amend { color: var(--accent); animation: op-slide-up 0.3s ease-out; }
   .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
-  .flash {
-    position: fixed; inset: 20% 0 auto 0; margin: 0 auto; width: fit-content;
-    background: linear-gradient(180deg, var(--cream), #e8dcc0);
-    color: var(--ink);
+  .badge-toast {
+    position: fixed; inset: auto 0 12% 0; margin: 0 auto; width: fit-content;
+    background: var(--accent); color: var(--ink); animation: op-slide-up 0.2s ease-out;
     padding: 0.75rem 1.5rem; border-radius: 14px;
     font-size: 1.15rem; font-weight: bold;
     box-shadow: 0 8px 24px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.6);
     border: 1px solid rgb(0 0 0 / 0.15);
   }
-  .err-flash { inset: 28% 0 auto 0; background: var(--danger); color: var(--cream); font-size: 1rem; }
-  .badge-toast { inset: auto 0 12% 0; background: var(--accent); }
   .orders-bar {
     height: 6px; border-radius: 3px; background: rgb(0 0 0 / 0.35); overflow: hidden;
   }

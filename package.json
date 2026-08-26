@@ -1,7 +1,7 @@
 {
   "name": "ordersplease",
   "private": true,
-  "version": "1.7.3",
+  "version": "1.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,12 +9,16 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "npm run build && playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@testing-library/svelte": "^5.4.2",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.13.3",
+    "jsdom": "^30.0.1",
     "svelte": "^5.56.10",
     "svelte-check": "^4.7.6",
     "typescript": "~6.0.2",

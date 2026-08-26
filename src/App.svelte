@@ -9,6 +9,7 @@
   import Settings from './routes/Settings.svelte';
   import Practice from './routes/Practice.svelte';
   import Tutorial from './routes/Tutorial.svelte';
+  import Bar from './routes/Bar.svelte';
   import { SKILL_ERROR, type Skill } from './core/difficulty';
   import { settings } from './stores/settings';
   import { progress, unlockedLevel } from './stores/progress';
@@ -44,6 +45,12 @@
   });
 
   $effect(() => {
+    document.documentElement.dataset.theme = $settings.theme ?? 'dark';
+    document.documentElement.dataset.accent = $settings.accent ?? 'default';
+    document.documentElement.style.fontSize = `${16 * ($settings.fontScale ?? 1)}px`;
+  });
+
+  $effect(() => {
     setVolume($settings.volume ?? 1);
   });
 
@@ -70,6 +77,8 @@
     <MenuEditor />
   {:else if $route === 'settings'}
     <Settings />
+  {:else if $route === 'bar'}
+    <Bar />
   {:else if practiceSkill !== null}
     <Game mode="practice" skill={practiceSkill} />
   {:else if $route === 'practice'}

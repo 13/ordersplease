@@ -11,11 +11,16 @@ export interface Settings {
   haptics: boolean;
   /** One-time migration marker: pieces entry became the default in 1.6.x. */
   piecesDefaultApplied?: boolean;
+  theme: 'dark' | 'light';
+  fontScale: number;
+  leftHand: boolean;
+  accent: string;
 }
 
 export const settings = persisted<Settings>('op.settings', {
   locale: 'en', sound: true, symbolFirst: false, useCustomMenu: false, alwaysShowPrices: false, amountEntry: false, volume: 1, haptics: true,
   piecesDefaultApplied: true,
+  theme: 'dark', fontScale: 1, leftHand: false, accent: 'default',
 });
 
 // Saves from before the pieces-mode default (or with the classic toggle left
