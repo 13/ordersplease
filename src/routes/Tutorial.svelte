@@ -152,8 +152,6 @@
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
     const k = e.key;
-    // focused buttons (outside the till) activate natively, same rule as the game
-    if ((k === 'Enter' || k === ' ') && target?.closest('button') && !target.closest('.till')) return;
     if (!round) return;
     if (round.phase === 'sum') {
       if (/^[0-9]$/.test(k)) { numpadApi?.press(k); e.preventDefault(); }

@@ -43,12 +43,12 @@
 {/if}
 <div class="actions">
   <button class="confirm" onclick={onconfirm}>
-    {finishMode ? $t('game.finish') : $t('game.confirm')}
+    <kbd>⏎</kbd> {finishMode ? $t('game.finish') : $t('game.confirm')}
   </button>
-  <button class="ask" onclick={ontoggleask}>{$t('game.ask')}</button>
+  <button class="ask" onclick={ontoggleask}><kbd>A</kbd> {$t('game.ask')}</button>
   {#if showExtras}
-    <button class="ask" onclick={onnotenough}>{$t('game.not-enough')}</button>
-    <button class="tipp" onclick={ontipp}>{$t('game.tipp')}{tippHint}</button>
+    <button class="ask" onclick={onnotenough}><kbd>N</kbd> {$t('game.not-enough')}</button>
+    <button class="tipp" onclick={ontipp}><kbd>T</kbd> {$t('game.tipp')}{tippHint}</button>
   {/if}
 </div>
 
@@ -74,4 +74,6 @@
   .ask-row button { background: var(--wood-light); color: var(--cream); }
   .ask-row kbd { background: var(--cream); color: var(--ink); border-radius: 3px; padding: 0 4px; font-size: 0.7rem; margin-right: 2px; }
   .tipp { background: var(--wood-light); color: var(--cream); }
+  .confirm kbd, .ask kbd, .tipp kbd { background: var(--cream); color: var(--ink); border-radius: 3px; padding: 0 4px; font-size: 0.7rem; margin-right: 2px; }
+  .confirm kbd { background: rgb(255 255 255 / 0.85); }
 </style>

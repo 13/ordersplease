@@ -658,9 +658,6 @@
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
     const k = e.key;
-    // a focused button (outside the till grid) activates natively on Enter/Space —
-    // otherwise keyboard users can never press Ask / Not-enough / dialog options
-    if ((k === 'Enter' || k === ' ') && target?.closest('button') && !target.closest('.till')) return;
     if (explaining) {
       if (k === 'Enter' || k === ' ' || k === 'Escape') {
         dismissExplain();

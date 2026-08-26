@@ -17,11 +17,12 @@
   <p class="prompt">{$t('game.sum-prompt')}</p>
   <Numpad onsubmit={onsum} {symbolFirst} {bindApi} />
   {#if showTipp}
-    <button class="tipp" onclick={ontipp}>{$t('game.tipp')}{tippHint}</button>
+    <button class="tipp" onclick={ontipp}><kbd>T</kbd> {$t('game.tipp')}{tippHint}</button>
   {/if}
 {/if}
 
 <style>
   .prompt { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: baseline; }
   .tipp { background: var(--wood-light); color: var(--cream); }
+  .tipp kbd { background: var(--cream); color: var(--ink); border-radius: 3px; padding: 0 4px; font-size: 0.7rem; margin-right: 2px; }
 </style>
