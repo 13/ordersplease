@@ -19,24 +19,20 @@ npm i -g @bubblewrap/cli
 
 ## Step 2: Initialize the TWA project
 
-Run Bubblewrap's init command. You can point it at either the live manifest or the local one:
+Run Bubblewrap's init command with the live web manifest:
 
 ```bash
 bubblewrap init --manifest https://13.github.io/ordersplease/manifest.webmanifest
 ```
 
-Or use the checked-in configuration:
-
-```bash
-bubblewrap init --manifest ./twa-manifest.json
-```
+To reuse a previous setup, copy the checked-in `twa-manifest.json` into your working directory before running init. Bubblewrap will then reuse those settings instead of asking all the prompts again.
 
 The interactive prompt will ask for:
 - App name, package name, launcher name
-- Icons and theme colors (these are already defined in `twa-manifest.json`)
+- Icons and theme colors (if no `twa-manifest.json` exists locally)
 - Android SDK location (if not found automatically)
 
-This creates a local `bubblewrap.json` configuration file (do not commit this to the repo).
+This creates a local `twa-manifest.json` configuration file (commit this to the repo so others can reuse these settings).
 
 ## Step 3: Generate and back up the keystore
 
