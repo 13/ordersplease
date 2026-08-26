@@ -592,6 +592,7 @@
 
   function setPaused(on: boolean, menu = false) {
     if (session.finished) return;
+    if (explaining) return; // explainer owns the freeze — no pause stacking (mirrors onKey)
     if (on) { askOpen = false; typedChange = ''; } // a stale open ask row would swallow the resume Escape
     paused = on;
     pauseMenu = on && menu;
