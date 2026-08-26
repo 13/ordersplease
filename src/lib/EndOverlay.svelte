@@ -102,7 +102,8 @@
 
 <style>
   .overlay {
-    position: fixed; inset: 0; background: rgb(0 0 0 / 0.75);
+    position: fixed; inset: 0; background: rgb(0 0 0 / 0.65);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     display: flex; flex-direction: column; align-items: center; justify-content: center; justify-content: safe center;
     gap: 0.75rem; text-align: center; padding: 1rem;
     overflow-y: auto;
@@ -124,5 +125,9 @@
   .note { color: var(--accent); font-size: 0.9rem; }
   .lvlname { opacity: 0.8; font-style: italic; }
   .overlay-actions { display: flex; flex-direction: column; gap: 0.5rem; width: 240px; }
-  .overlay-actions button { background: var(--accent); color: var(--ink); font-size: 1.1rem; }
+  .overlay-actions button {
+    background: var(--accent); color: var(--ink); font-size: 1.1rem;
+    box-shadow: 0 3px 0 rgb(0 0 0 / 0.3);
+  }
+  .overlay-actions button:active { transform: translateY(1px); box-shadow: 0 2px 0 rgb(0 0 0 / 0.3); }
 </style>

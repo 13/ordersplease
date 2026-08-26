@@ -50,12 +50,17 @@
 
 <style>
   .pause {
-    position: fixed; inset: 0; background: rgb(0 0 0 / 0.85);
+    position: fixed; inset: 0; background: rgb(0 0 0 / 0.7);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 1rem; text-align: center;
   }
   .menu-actions { display: flex; flex-direction: column; gap: 0.5rem; width: 240px; }
-  .menu-actions button { background: var(--accent); color: var(--ink); font-size: 1.1rem; }
+  .menu-actions button {
+    background: var(--accent); color: var(--ink); font-size: 1.1rem;
+    box-shadow: 0 3px 0 rgb(0 0 0 / 0.3);
+  }
+  .menu-actions button:active { transform: translateY(1px); box-shadow: 0 2px 0 rgb(0 0 0 / 0.3); }
   .quick {
     display: flex; flex-direction: column; gap: 0.5rem; width: 240px;
     text-align: left; font-size: 0.9rem; margin-top: 0.5rem;

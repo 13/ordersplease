@@ -21,12 +21,14 @@
 
 <style>
   .explain {
-    position: fixed; inset: 0; background: rgb(0 0 0 / 0.8);
+    position: fixed; inset: 0; background: rgb(0 0 0 / 0.7);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     display: flex; align-items: center; justify-content: center; padding: var(--space-4);
   }
   .card {
     background: var(--cream); color: var(--ink);
-    border-radius: var(--radius); padding: var(--space-5);
+    border-radius: 16px; padding: var(--space-5);
+    border-top: 4px solid var(--accent);
     max-width: 340px; display: flex; flex-direction: column; gap: var(--space-3);
     box-shadow: var(--shadow); animation: op-pop 0.2s ease-out;
   }

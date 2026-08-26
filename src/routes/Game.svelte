@@ -658,6 +658,9 @@
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
     const k = e.key;
+    // a focused button (outside the till grid) activates natively on Enter/Space —
+    // otherwise keyboard users can never press Ask / Not-enough / dialog options
+    if ((k === 'Enter' || k === ' ') && target?.closest('button') && !target.closest('.till')) return;
     if (explaining) {
       if (k === 'Enter' || k === ' ' || k === 'Escape') {
         dismissExplain();
@@ -792,6 +795,12 @@
     </div>
   {/if}
 
+  {#if mode !== 'rush'}
+    <div class="orders-bar" title="{session.roundsDone}/{session.params.ordersPerLevel}">
+      <div class="orders-fill" style="width: {(session.roundsDone / session.params.ordersPerLevel) * 100}%"></div>
+    </div>
+  {/if}
+
   <div class="queue">
     {#each session.queue as c, i (c.id)}
       {@const frac = c.patienceMs / c.maxPatienceMs}
@@ -908,10 +917,20 @@
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
   .flash {
     position: fixed; inset: 20% 0 auto 0; margin: 0 auto; width: fit-content;
-    background: var(--cream); color: var(--ink);
-    padding: 0.75rem 1.5rem; border-radius: var(--radius);
+    background: linear-gradient(180deg, var(--cream), #e8dcc0);
+    color: var(--ink);
+    padding: 0.75rem 1.5rem; border-radius: 14px;
     font-size: 1.15rem; font-weight: bold;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.6);
+    border: 1px solid rgb(0 0 0 / 0.15);
   }
   .err-flash { inset: 28% 0 auto 0; background: var(--danger); color: var(--cream); font-size: 1rem; }
   .badge-toast { inset: auto 0 12% 0; background: var(--accent); }
+  .orders-bar {
+    height: 6px; border-radius: 3px; background: rgb(0 0 0 / 0.35); overflow: hidden;
+  }
+  .orders-fill {
+    height: 100%; background: var(--accent); border-radius: 3px;
+    transition: width 0.4s ease;
+  }
 </style>
