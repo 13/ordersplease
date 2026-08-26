@@ -112,10 +112,8 @@ export function submitChange(s: RoundState, pile: Denom[]): RoundState {
   if (s.phase !== 'change') return s;
   if (isUnderpaid(s)) return fail(s, ['trap-missed']);
   if (piecesTotal(pile) === s.changeDue && hasPieces(s.till, pile)) {
-    const incoming = s.usedAsk
-      ? [...s.paymentPieces, s.paymentCents - piecesTotal(s.paymentPieces)]
-      : s.paymentPieces;
-    const till = addToTill(removeFromTill(s.till, pile), incoming);
+    // paymentPieces already includes any asked-for coin (see askCustomer)
+    const till = addToTill(removeFromTill(s.till, pile), s.paymentPieces);
     return { ...s, phase: 'done', success: true, till };
   }
   return bumpChangeTry(s);
@@ -124,13 +122,14 @@ export function submitChange(s: RoundState, pile: Denom[]): RoundState {
 export function askCustomer(s: RoundState, denom: Denom): RoundState {
   if (s.phase !== 'change') return s;
   if (isUnderpaid(s)) return bumpChangeTry(s); // underpayment must be challenged, not asked around
-  if (s.usedAsk) return bumpChangeTry(s); // one ask per round — keeps the asked-coin reconstruction in submitChange sound
+  if (s.usedAsk) return bumpChangeTry(s); // one ask per round
   if (askOptions(s.till, s.changeDue).includes(denom)) {
     return {
       ...s,
       usedAsk: true,
       changeDue: s.changeDue + denom,
       paymentCents: s.paymentCents + denom,
+      paymentPieces: [...s.paymentPieces, denom], // the handed-over coin shows in the "pays" row
     };
   }
   return bumpChangeTry(s);

@@ -10,8 +10,8 @@
   import { createRound, submitSum, submitChange, askCustomer, type RoundState } from '../core/round';
   import { orderTotal, piecesTotal, type OrderLine } from '../core/order';
   import { renderOrder } from '../core/text-order';
-  import { formatEuro } from '../core/money';
-  import type { Denom } from '../core/till';
+  import { formatEuro, parseEntry } from '../core/money';
+  import { DENOMS, type Denom } from '../core/till';
   import { chaChing, coinClink, errorBuzz } from '../lib/sound';
   import MenuCard from '../lib/MenuCard.svelte';
   import SumPhase from '../lib/SumPhase.svelte';
@@ -46,6 +46,7 @@
 
   function startStep(i: number) {
     step = i;
+    typed = '';
     const s = TUTORIAL_STEPS[i];
     const lines = linesFor(i);
     round = createRound(
@@ -116,19 +117,58 @@
   function onNotEnough() { /* hidden via showExtras */ }
 
   let numpadApi: NumpadApi | null = null;
+  let typed = $state('');
+
+  function typePiece(d: string) {
+    if (d === ',') {
+      if (typed.includes(',')) return;
+      typed = typed === '' ? '0,' : typed + ',';
+      return;
+    }
+    const [euros, cents] = typed.split(',');
+    if (cents !== undefined) {
+      if (cents.length >= 2) return;
+    } else if (euros.length >= 4) return;
+    typed += d;
+  }
+
+  function submitTypedPiece() {
+    if (!round) return;
+    if (typed === '') {
+      confirm();
+      return;
+    }
+    const amount = parseEntry(typed);
+    typed = '';
+    const d = amount as Denom;
+    if (!(DENOMS as readonly number[]).includes(d) || (tillView[d] ?? 0) <= 0) {
+      errorBuzz($settings.sound);
+      return;
+    }
+    take(d);
+  }
 
   function onKey(e: KeyboardEvent) {
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
-    if (!round) return;
     const k = e.key;
+    // focused buttons (outside the till) activate natively, same rule as the game
+    if ((k === 'Enter' || k === ' ') && target?.closest('button') && !target.closest('.till')) return;
+    if (!round) return;
     if (round.phase === 'sum') {
       if (/^[0-9]$/.test(k)) { numpadApi?.press(k); e.preventDefault(); }
       else if (k === ',' || k === '.') { numpadApi?.press(','); e.preventDefault(); }
       else if (k === 'Backspace') { numpadApi?.press('Backspace'); e.preventDefault(); }
       else if (k === 'Enter') { numpadApi?.press('Enter'); e.preventDefault(); }
     } else if (round.phase === 'change') {
-      if (k === 'Enter') { confirm(); e.preventDefault(); }
+      if (/^[0-9]$/.test(k) || k === ',' || k === '.') {
+        if (round.changeDue === 0) return; // exact payment: nothing to give
+        typePiece(k === '.' ? ',' : k);
+        e.preventDefault();
+      } else if (k === 'Backspace') {
+        typed = typed.slice(0, -1);
+        e.preventDefault();
+      } else if (k === 'Enter') { submitTypedPiece(); e.preventDefault(); }
     }
   }
 
@@ -164,7 +204,9 @@
             showPileTotal={true} showKeys={false}
             finishMode={round.changeDue === 0}
             {askOpen} showExtras={false}
-            ontake={take} onreturn={ret} onconfirm={confirm}
+            typedDisplay={typed === '' ? '' : formatEuro(parseEntry(typed), $settings.symbolFirst)}
+            typedHint={$t('game.typed-hint-piece')}
+            ontake={take} onreturn={ret} onconfirm={submitTypedPiece}
             ontoggleask={() => (askOpen = !askOpen)}
             onask={onAsk} onnotenough={onNotEnough} ontipp={() => {}}
           />
