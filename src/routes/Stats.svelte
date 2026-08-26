@@ -13,7 +13,7 @@
   import { careerTitle } from '../core/career';
   import { monthGrid } from '../core/calendar';
   import { weeklyHistory } from '../stores/weekly-history';
-  import { weekKey } from '../core/weekly';
+  import { weekKey, formatPts } from '../core/weekly';
   import { decodeResult } from '../core/compare';
 
   const ERROR_KEYS: RoundError[] = [
@@ -117,7 +117,7 @@
     }
     const theirs = decoded.score;
     const suffix = mine > theirs ? $t('compare.win') : mine < theirs ? $t('compare.lose') : $t('compare.tie');
-    compareMsg = `${$t('compare.result').replace('{mine}', String(mine)).replace('{theirs}', String(theirs))} ${suffix}`;
+    compareMsg = `${$t('compare.result').replace('{mine}', formatPts(mine)).replace('{theirs}', formatPts(theirs))} ${suffix}`;
   }
 </script>
 
@@ -201,7 +201,7 @@
     {#each archive as a (a.week)}
       <li class:current={a.week === currentWeek}>
         <span>{a.week}</span>
-        <span>{a.score}</span>
+        <span>{formatPts(a.score)}</span>
       </li>
     {/each}
   </ul>

@@ -63,6 +63,7 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 1rem; text-align: center;
   }
+  .pause > h2 { color: #f5ecd7; }
   .card {
     background: var(--wood-light); border-radius: 16px; padding: 1rem;
     box-shadow: 0 12px 32px rgb(0 0 0 / 0.5); width: min(320px, 92vw);
@@ -88,7 +89,7 @@
   .quick input[type='checkbox'] { width: 20px; height: 20px; margin-left: auto; }
   .tapzone {
     position: absolute; inset: 0; width: 100%;
-    background: none; color: var(--cream); opacity: 0.7;
+    background: none; color: #f5ecd7; opacity: 0.7;
     display: flex; align-items: flex-end; justify-content: center;
     padding-bottom: 20dvh; font-size: 1rem;
   }

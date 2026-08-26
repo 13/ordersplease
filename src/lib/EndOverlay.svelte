@@ -122,6 +122,8 @@
   .panel {
     margin: auto 0; display: flex; flex-direction: column; align-items: center;
     gap: 0.75rem; text-align: center;
+    background: var(--wood-light); border-radius: 16px; padding: 1rem;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
   }
   .shower { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .drop {

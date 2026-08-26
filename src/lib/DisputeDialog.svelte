@@ -32,8 +32,9 @@
     backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 0.75rem; text-align: center; padding: 1rem;
+    color: #f5ecd7;
   }
-  .claim { font-size: 1.3rem; font-style: italic; color: var(--accent); }
+  .claim { font-size: 1.3rem; font-style: italic; color: #d99a2b; }
   .choices { display: flex; gap: 0.75rem; }
   .choices button {
     background: linear-gradient(180deg, var(--cream), var(--cream-2));

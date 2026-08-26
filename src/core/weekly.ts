@@ -38,7 +38,7 @@ export function nextWeeklyRecord(
   return { week, score, best };
 }
 
-function formatPts(score: number): string {
+export function formatPts(score: number): string {
   return String(score).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
