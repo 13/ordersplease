@@ -610,7 +610,7 @@
       elapsedMs: session.elapsedMs,
       dailyStreak: get(daily)?.streak ?? 0,
       weeklyWeeks,
-      lifetimeTips: Math.floor((statsData.tipsEarnedCents ?? 0) / 100),
+      lifetimeTips: statsData.tipsEarnedCents ?? 0, // cents — badge thresholds are in cents
       lifetimeRounds: statsData.rounds,
       threeStarLevels,
       titleRank,
