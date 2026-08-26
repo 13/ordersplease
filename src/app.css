@@ -64,12 +64,12 @@ button:active { transform: scale(0.97); }
   --wood-light: #e0cba6;
   --cream: #3a2c1c;
   --ink: #f7f1e3;
-  --accent: #b57614;
+  --accent: #6e4408;
   --danger: #a93226;
   --ok: #1e6b3f;
   color-scheme: light;
 }
 :root[data-accent='copper'] { --accent: #b8622d; }
 :root[data-accent='forest'] { --accent: #4a7c59; }
-:root[data-theme='light'][data-accent='copper'] { --accent: #9c4f1e; }
+:root[data-theme='light'][data-accent='copper'] { --accent: #7a3c14; }
 :root[data-theme='light'][data-accent='forest'] { --accent: #35603f; }
