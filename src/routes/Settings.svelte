@@ -42,6 +42,15 @@
 
   <button class="replay" onclick={() => go('tutorial')}>{$t('settings.replay-tutorial')}</button>
   <button class="danger" onclick={resetAll}>{$t('settings.reset')}</button>
+
+  <div class="about">
+    <img src="{import.meta.env.BASE_URL}icon.svg" alt="" width="48" height="48" />
+    <div class="meta">
+      <strong>Orders, Please</strong>
+      <span>{$t('settings.version')} {__APP_VERSION__}</span>
+      <a href="https://github.com/13/ordersplease" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </div>
 </main>
 
 <style>
@@ -54,4 +63,13 @@
   .vol input { flex: 1; }
   .replay { background: var(--wood-light); color: var(--cream); }
   .danger { background: var(--danger); color: var(--cream); margin-top: 1.5rem; }
+  .about {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-top: 1.5rem; padding: 0.75rem;
+    background: var(--wood-light); border-radius: var(--radius);
+  }
+  .about img { border-radius: 10px; }
+  .meta { display: flex; flex-direction: column; font-size: 0.85rem; }
+  .meta span { opacity: 0.75; }
+  .meta a { color: var(--accent); }
 </style>

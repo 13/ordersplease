@@ -127,6 +127,7 @@ export default {
   'settings.haptics-label': 'Vibration',
   'settings.volume': 'Volume',
   'settings.reset': 'Reset all progress',
+  'settings.version': 'Version',
   'settings.reset-confirm': 'Really delete all progress and stats?',
   'settings.replay-tutorial': 'Replay tutorial',
   'level.name.1': 'First Shift',

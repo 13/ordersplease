@@ -127,6 +127,7 @@ export default {
   'settings.haptics-label': 'Vibration',
   'settings.volume': 'Lautstärke',
   'settings.reset': 'Fortschritt zurücksetzen',
+  'settings.version': 'Version',
   'settings.reset-confirm': 'Wirklich allen Fortschritt und alle Statistiken löschen?',
   'settings.replay-tutorial': 'Tutorial wiederholen',
   'level.name.1': 'Erste Schicht',
