@@ -9,6 +9,8 @@
   import { history, localDayKey, type DayEntry } from '../stores/history';
   import { formatEuro } from '../core/money';
   import { settings } from '../stores/settings';
+  import { progress } from '../stores/progress';
+  import { careerTitle } from '../core/career';
 
   const ERROR_KEYS: RoundError[] = [
     'sum-wrong', 'change-wrong', 'shortage-missed', 'parse-wrong', 'timeout',
@@ -19,6 +21,13 @@
     $stats.rounds === 0 ? 0 : Math.round($stats.totalMs / $stats.rounds / 100) / 10,
   );
   const streak = $derived(dayStreak($stats, new Date()));
+  const totalStars = $derived(Object.values($progress.stars ?? {}).reduce((a, b) => a + b, 0));
+  const maxLevelWon = $derived(
+    Object.keys($progress.stars ?? {}).length > 0
+      ? Math.max(...Object.keys($progress.stars ?? {}).map((k) => parseInt(k, 10)))
+      : 0,
+  );
+  const title = $derived(careerTitle(totalStars, maxLevelWon));
   const worst = $derived.by(() => {
     const entries = ERROR_KEYS.map((k) => [k, $stats.errors[k] ?? 0] as const);
     const max = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
@@ -65,6 +74,7 @@
     <div><dt>{$t('stats.streak')}</dt><dd>{streak} 🔥</dd></div>
     <div><dt>{$t('stats.rush-high')}</dt><dd>{$stats.rushHigh}</dd></div>
     <div><dt>{$t('stats.tips')}</dt><dd>{formatEuro($stats.tipsEarnedCents ?? 0, $settings.symbolFirst)}</dd></div>
+    <div><dt>{$t('stats.career')}</dt><dd>{$t(`career.${title}`)}</dd></div>
   </dl>
 
   {#if hasHistory}
