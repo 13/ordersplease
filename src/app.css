@@ -57,3 +57,17 @@ button:active { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) {
   button:active { transform: none; }
 }
+:root[data-theme='light'] {
+  --wood: #f2e7d0;
+  --wood-light: #e0cba6;
+  --cream: #3a2c1c;
+  --ink: #f7f1e3;
+  --accent: #b57614;
+  --danger: #a93226;
+  --ok: #1e6b3f;
+  color-scheme: light;
+}
+:root[data-accent='copper'] { --accent: #b8622d; }
+:root[data-accent='forest'] { --accent: #4a7c59; }
+:root[data-theme='light'][data-accent='copper'] { --accent: #9c4f1e; }
+:root[data-theme='light'][data-accent='forest'] { --accent: #35603f; }

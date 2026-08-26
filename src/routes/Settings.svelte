@@ -37,6 +37,22 @@
   <label><input type="checkbox" bind:checked={$settings.alwaysShowPrices} /> {$t('settings.show-prices')}</label>
   <label><input type="checkbox" bind:checked={$settings.amountEntry} /> {$t('settings.amount-entry')}</label>
   <label><input type="checkbox" bind:checked={$settings.haptics} /> {$t('settings.haptics-label')}</label>
+  <label>
+    <input
+      type="checkbox"
+      checked={$settings.theme === 'light'}
+      onchange={(e) => settings.update((s) => ({ ...s, theme: e.currentTarget.checked ? 'light' : 'dark' }))}
+    /> {$t('settings.theme-label')}
+  </label>
+  <label>
+    {$t('settings.font-size')}
+    <select bind:value={$settings.fontScale}>
+      <option value={1}>{$t('settings.font-normal')}</option>
+      <option value={1.15}>{$t('settings.font-large')}</option>
+      <option value={1.3}>{$t('settings.font-xlarge')}</option>
+    </select>
+  </label>
+  <label><input type="checkbox" bind:checked={$settings.leftHand} /> {$t('settings.left-hand')}</label>
   {#if $settings.sound}
     <label class="vol">{$t('settings.volume')}
       <input type="range" min="0" max="1" step="0.1" bind:value={$settings.volume} />

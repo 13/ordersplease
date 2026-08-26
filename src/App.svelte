@@ -44,6 +44,12 @@
   });
 
   $effect(() => {
+    document.documentElement.dataset.theme = $settings.theme ?? 'dark';
+    document.documentElement.dataset.accent = $settings.accent ?? 'default';
+    document.documentElement.style.fontSize = `${16 * ($settings.fontScale ?? 1)}px`;
+  });
+
+  $effect(() => {
     setVolume($settings.volume ?? 1);
   });
 

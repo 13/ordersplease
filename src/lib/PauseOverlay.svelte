@@ -42,6 +42,13 @@
       <label><input type="checkbox" bind:checked={$settings.alwaysShowPrices} /> {$t('settings.show-prices')}</label>
       <label><input type="checkbox" bind:checked={$settings.amountEntry} /> {$t('settings.amount-entry')}</label>
       <label><input type="checkbox" bind:checked={$settings.haptics} /> {$t('settings.haptics-label')}</label>
+      <label>
+        <input
+          type="checkbox"
+          checked={$settings.theme === 'light'}
+          onchange={(e) => settings.update((s) => ({ ...s, theme: e.currentTarget.checked ? 'light' : 'dark' }))}
+        /> {$t('settings.theme-label')}
+      </label>
     </div>
   {:else}
     <button class="tapzone" onclick={onresume}>{$t('pause.tap')}</button>
