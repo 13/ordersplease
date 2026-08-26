@@ -64,9 +64,11 @@
   }
   .tiles strong { font-size: 0.9rem; }
   .tiles span { font-size: 0.7rem; opacity: 0.7; }
-  .row { display: flex; gap: var(--space-2); }
+  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
   .row .minor {
-    flex: 1; background: none; color: var(--cream);
-    border: 1px solid var(--wood-light); font-size: 0.85rem; padding: var(--space-2);
+    min-width: 0; background: none; color: var(--cream);
+    border: 1px solid var(--wood-light); font-size: 0.8rem;
+    padding: var(--space-2) var(--space-1);
+    overflow-wrap: anywhere; hyphens: auto;
   }
 </style>

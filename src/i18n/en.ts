@@ -16,6 +16,7 @@ export default {
   'game.level': 'Level',
   'game.rush': 'Rush',
   'game.score': 'Score',
+  'game.menu': 'Menu',
   'game.sum-prompt': 'What does it cost?',
   'game.pays': 'Customer pays',
   'game.confirm': 'Give change',

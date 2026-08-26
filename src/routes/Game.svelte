@@ -736,6 +736,7 @@
     {#if session.streak >= 3}<span class="flame">🔥{session.streak}</span>{/if}
     {#if tipJar > 0}<span class="jar">🫙 {formatEuro(tipJar, symbolFirst)}</span>{/if}
     <span>{$t('game.score')}: {session.score}</span>
+    <button class="menu-btn" aria-label={$t('game.menu')} onclick={() => setPaused(true, true)}>☰</button>
   </header>
 
   {#if happyHour || rowdy}
@@ -845,6 +846,7 @@
   .lives { color: var(--danger); }
   .lives.pulse { animation: op-pulse 0.5s ease-in-out; }
   .jar { font-size: 0.9rem; }
+  .menu-btn { background: none; color: var(--cream); font-size: 1.2rem; padding: 0 0.3rem; min-height: 0; }
   .chips { display: flex; gap: 0.4rem; }
   .chip {
     background: var(--accent); color: var(--ink);
