@@ -2,7 +2,9 @@
 function packWeek(week: string): number | null {
   const m = /^(\d{4})-W(\d{2})$/.exec(week);
   if (!m) return null;
-  return Number(m[1]) * 54 + Number(m[2]);
+  const wk = Number(m[2]);
+  if (wk < 1 || wk > 53) return null; // base-54 packing breaks silently beyond ISO's 01-53
+  return Number(m[1]) * 54 + wk;
 }
 
 function unpackWeek(n: number): string {

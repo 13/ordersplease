@@ -22,3 +22,11 @@ describe('compare codec', () => {
     }
   });
 });
+
+describe('week range hardening', () => {
+  it('rejects weeks outside ISO 01-53 at encode time', () => {
+    expect(encodeResult({ week: '2026-W54', score: 10 })).toBe('');
+    expect(encodeResult({ week: '2026-W99', score: 10 })).toBe('');
+    expect(encodeResult({ week: '2026-W00', score: 10 })).toBe('');
+  });
+});
