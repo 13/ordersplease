@@ -16,6 +16,7 @@
   import MenuCard from '../lib/MenuCard.svelte';
   import SumPhase from '../lib/SumPhase.svelte';
   import ChangePhase from '../lib/ChangePhase.svelte';
+  import type { NumpadApi } from '../lib/Numpad.svelte';
 
   const menu = $derived(localizedDefaultMenu($settings.locale));
   let step = $state(0);
@@ -114,8 +115,27 @@
 
   function onNotEnough() { /* hidden via showExtras */ }
 
+  let numpadApi: NumpadApi | null = null;
+
+  function onKey(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
+    if (!round) return;
+    const k = e.key;
+    if (round.phase === 'sum') {
+      if (/^[0-9]$/.test(k)) { numpadApi?.press(k); e.preventDefault(); }
+      else if (k === ',' || k === '.') { numpadApi?.press(','); e.preventDefault(); }
+      else if (k === 'Backspace') { numpadApi?.press('Backspace'); e.preventDefault(); }
+      else if (k === 'Enter') { numpadApi?.press('Enter'); e.preventDefault(); }
+    } else if (round.phase === 'change') {
+      if (k === 'Enter') { confirm(); e.preventDefault(); }
+    }
+  }
+
   startStep(0);
 </script>
+
+<svelte:window onkeydown={onKey} />
 
 <main class="tutorial">
   <header>
@@ -135,7 +155,7 @@
           <SumPhase
             locked={false} symbolFirst={$settings.symbolFirst}
             onsum={onSum} ontipp={() => {}} showTipp={false}
-            bindApi={() => {}}
+            bindApi={(api) => (numpadApi = api)}
           />
         {:else if round.phase === 'change'}
           <ChangePhase
