@@ -1,6 +1,7 @@
 <!-- src/lib/DisputeDialog.svelte -->
 <script lang="ts">
   import { focusFirst } from './focus';
+  import { keynav } from './keynav';
 
   let { claimText, question, options, onanswer }: {
     claimText: string;
@@ -18,7 +19,7 @@
 <div class="dispute" role="alertdialog" aria-label={question} bind:this={rootEl}>
   <p class="claim">“{claimText}”</p>
   <p>{question}</p>
-  <div class="choices">
+  <div class="choices" use:keynav>
     {#each options as o, i (o.value)}
       <button onclick={() => onanswer(o.value)}><kbd>{i + 1}</kbd> {o.label}</button>
     {/each}

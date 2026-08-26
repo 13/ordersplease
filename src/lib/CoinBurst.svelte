@@ -33,7 +33,7 @@
 
 <style>
   .coin-part {
-    position: fixed; left: 50%; bottom: 18%;
+    position: fixed; left: 50%; top: 24%;
     width: 22px; height: 22px; border-radius: 50%;
     background: radial-gradient(circle at 35% 35%, #f0c96a, #c9962e);
     border: 2px solid rgb(0 0 0 / 0.25);

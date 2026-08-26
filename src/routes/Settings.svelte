@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '../i18n';
+  import { keynav } from '../lib/keynav';
   import { go } from '../lib/router';
   import { settings } from '../stores/settings';
   import { progress } from '../stores/progress';
@@ -19,7 +20,7 @@
   }
 </script>
 
-<main class="settings">
+<main class="settings" use:keynav>
   <h2><button class="back" onclick={() => go('home')} aria-label={$t('nav.back')}>←</button> {$t('settings.title')}</h2>
 
   <label>

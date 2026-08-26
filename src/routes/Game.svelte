@@ -907,11 +907,11 @@
   .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
   .flash {
-    position: fixed; inset: 7% 0 auto 0; margin: 0 auto; width: fit-content;
+    position: fixed; inset: 20% 0 auto 0; margin: 0 auto; width: fit-content;
     background: var(--cream); color: var(--ink);
     padding: 0.75rem 1.5rem; border-radius: var(--radius);
     font-size: 1.15rem; font-weight: bold;
   }
-  .err-flash { inset: 14% 0 auto 0; background: var(--danger); color: var(--cream); font-size: 1rem; }
+  .err-flash { inset: 28% 0 auto 0; background: var(--danger); color: var(--cream); font-size: 1rem; }
   .badge-toast { inset: auto 0 12% 0; background: var(--accent); }
 </style>

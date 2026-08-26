@@ -6,6 +6,7 @@
   import { MAX_LEVEL } from '../core/difficulty';
   import RoundDetails from './RoundDetails.svelte';
   import { focusFirst } from './focus';
+  import { keynav } from './keynav';
 
   let {
     session, level, stars, wasNewHigh, onretry, onshare = null, shareLabel = '', note = null,
@@ -87,7 +88,7 @@
 
   <RoundDetails log={fullRounds} />
 
-  <div class="overlay-actions" bind:this={actionsEl}>
+  <div class="overlay-actions" use:keynav bind:this={actionsEl}>
     {#if onshare}
       <button onclick={onshare}>{shareLabel}</button>
     {/if}

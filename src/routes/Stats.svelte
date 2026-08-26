@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '../i18n';
+  import { keynav } from '../lib/keynav';
   import { go } from '../lib/router';
   import { stats, dayStreak } from '../stores/stats';
   import type { RoundError } from '../core/round';
@@ -55,7 +56,7 @@
   });
 </script>
 
-<main class="stats">
+<main class="stats" use:keynav>
   <h2><button class="back" onclick={() => go('home')} aria-label={$t('nav.back')}>←</button> {$t('stats.title')}</h2>
 
   <dl>
