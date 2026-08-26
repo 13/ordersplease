@@ -85,7 +85,7 @@
     <p>{$t('result.highscore')}</p>
   {/if}
 
-  <RoundDetails log={session.roundLog} />
+  <RoundDetails log={fullRounds} />
 
   <div class="overlay-actions" bind:this={actionsEl}>
     {#if onshare}
@@ -104,7 +104,7 @@
     position: fixed; inset: 0; background: rgb(0 0 0 / 0.75);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 0.75rem; text-align: center; padding: 1rem;
-    overflow: hidden;
+    overflow-y: auto;
   }
   .shower { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .drop {

@@ -132,7 +132,7 @@
           <ChangePhase
             paymentPieces={round.paymentPieces}
             {tillView} {pile}
-            showPileTotal={true} showKeys={true}
+            showPileTotal={true} showKeys={false}
             finishMode={round.changeDue === 0}
             {askOpen} showExtras={false}
             ontake={take} onreturn={ret} onconfirm={confirm}
