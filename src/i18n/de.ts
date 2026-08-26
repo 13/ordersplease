@@ -57,7 +57,6 @@ export default {
   'pause.settings': 'Einstellungen',
   'menu.resume': 'Weiter',
   'menu.restart': 'Neu starten',
-  'menu.sound': 'Ton',
   'result.won': 'Schicht geschafft!',
   'result.lost': 'Nacht vorbei',
   'result.next': 'Nächstes Level',

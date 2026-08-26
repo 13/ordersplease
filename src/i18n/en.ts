@@ -57,7 +57,6 @@ export default {
   'pause.settings': 'Settings',
   'menu.resume': 'Resume',
   'menu.restart': 'Restart',
-  'menu.sound': 'Sound',
   'result.won': 'Shift done!',
   'result.lost': 'Night over',
   'result.next': 'Next level',
