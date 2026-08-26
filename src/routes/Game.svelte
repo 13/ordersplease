@@ -40,6 +40,7 @@
   import { tipFor, tipEligible } from '../core/tips';
   import { history, recordDayEntry, pruneHistory, localDayKey } from '../stores/history';
   import { weeklyHistory } from '../stores/weekly-history';
+  import { encodeResult } from '../core/compare';
   import { careerTitle, applyUpgrades, boostTip, freeFirstHint } from '../core/career';
   import { career } from '../stores/career';
   import type { DifficultyParams } from '../core/difficulty';
@@ -594,9 +595,10 @@
     }
     if (session.mode === 'weekly') {
       weekly.update((prev) => nextWeeklyRecord(prev, new Date(), session.score));
-      // Update weekly history to track which weeks have been played
+      // Update weekly history archive with this week's best score (used by the
+      // Stats calendar's weekly archive list and friend-compare lookup).
       const week = weekKey(new Date());
-      weeklyHistory.update((h) => ({ ...h, [week]: 1 }));
+      weeklyHistory.update((h) => ({ ...h, [week]: Math.max(h[week] ?? 0, session.score) }));
     }
     bigWin = (session.mode === 'level' && session.finished === 'won' && stars === 3)
       || (session.mode === 'rush' && wasNewHigh)
@@ -890,6 +892,7 @@
       note={mode === 'daily' && !rankedRun ? $t('daily.unranked') : null}
       levelName={mode === 'level' ? $t(`level.name.${level}`) : null}
       celebrate={bigWin}
+      compareCode={mode === 'weekly' ? encodeResult({ week: weekKey(new Date()), score: session.score }) : null}
     />
   {/if}
 

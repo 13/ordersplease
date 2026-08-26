@@ -11,6 +11,10 @@
   import { settings } from '../stores/settings';
   import { progress } from '../stores/progress';
   import { careerTitle } from '../core/career';
+  import { monthGrid } from '../core/calendar';
+  import { weeklyHistory } from '../stores/weekly-history';
+  import { weekKey } from '../core/weekly';
+  import { decodeResult } from '../core/compare';
 
   const ERROR_KEYS: RoundError[] = [
     'sum-wrong', 'change-wrong', 'shortage-missed', 'parse-wrong', 'timeout',
@@ -63,6 +67,58 @@
     if (current.length) segs.push(current.join(' '));
     return segs.filter((s) => s.includes(' ')); // only segments with ≥2 points
   });
+
+  const today = new Date();
+  let viewYear = $state(today.getFullYear());
+  let viewMonth = $state(today.getMonth());
+  let selectedDay = $state<string | null>(null);
+
+  const grid = $derived(monthGrid(viewYear, viewMonth));
+  const monthLabel = $derived(
+    new Date(viewYear, viewMonth, 1).toLocaleDateString($settings.locale === 'de' ? 'de-DE' : 'en-US', {
+      month: 'long', year: 'numeric',
+    }),
+  );
+  const weekdayLabels = $derived($t('cal.days').split(','));
+  const selectedEntry = $derived(selectedDay ? $history[selectedDay] ?? null : null);
+
+  function prevMonth() {
+    if (viewMonth === 0) { viewMonth = 11; viewYear -= 1; } else { viewMonth -= 1; }
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { viewMonth = 0; viewYear += 1; } else { viewMonth += 1; }
+  }
+  function dayIntensity(key: string): string {
+    const entry = $history[key];
+    if (!entry || entry.rounds <= 0) return '';
+    return entry.rounds >= 10 ? 'strong' : 'soft';
+  }
+
+  const currentWeek = $derived(weekKey(new Date()));
+  const archive = $derived.by(() =>
+    Object.entries($weeklyHistory)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, 12)
+      .map(([week, score]) => ({ week, score })),
+  );
+
+  let compareInput = $state('');
+  let compareMsg = $state<string | null>(null);
+  function doCompare() {
+    const decoded = decodeResult(compareInput);
+    if (!decoded) {
+      compareMsg = $t('compare.invalid');
+      return;
+    }
+    const mine = $weeklyHistory[decoded.week];
+    if (mine === undefined) {
+      compareMsg = $t('compare.no-own').replace('{week}', decoded.week);
+      return;
+    }
+    const theirs = decoded.score;
+    const suffix = mine > theirs ? $t('compare.win') : mine < theirs ? $t('compare.lose') : $t('compare.tie');
+    compareMsg = `${$t('compare.result').replace('{mine}', String(mine)).replace('{theirs}', String(theirs))} ${suffix}`;
+  }
 </script>
 
 <main class="stats" use:keynav>
@@ -94,6 +150,64 @@
       {/each}
     </svg>
   {/if}
+
+  <h3>{$t('cal.title')}</h3>
+  <div class="calendar">
+    <div class="cal-header">
+      <button class="cal-nav" onclick={prevMonth} aria-label="‹">‹</button>
+      <span>{monthLabel}</span>
+      <button class="cal-nav" onclick={nextMonth} aria-label="›">›</button>
+    </div>
+    <div class="cal-grid cal-weekdays">
+      {#each weekdayLabels as wd (wd)}
+        <span class="cal-wd">{wd}</span>
+      {/each}
+    </div>
+    {#each grid as row, ri (ri)}
+      <div class="cal-grid">
+        {#each row as key, ci (ci)}
+          {#if key}
+            <button
+              type="button"
+              class="cal-day {dayIntensity(key)}"
+              class:selected={selectedDay === key}
+              onclick={() => (selectedDay = key)}
+            >
+              {key.slice(8)}
+              {#if $stats.days[key]}<span class="rec-dot" aria-hidden="true"></span>{/if}
+            </button>
+          {:else}
+            <span class="cal-day empty" aria-hidden="true"></span>
+          {/if}
+        {/each}
+      </div>
+    {/each}
+    {#if selectedDay}
+      <p class="cal-detail">
+        <strong>{selectedDay}</strong>
+        {#if selectedEntry}
+          — {$t('stats.rounds')}: {selectedEntry.rounds}
+          · {$t('result.accuracy')}: {Math.round((selectedEntry.correct / Math.max(1, selectedEntry.rounds)) * 100)}%
+          · {$t('stats.tips')}: {formatEuro(selectedEntry.tips, $settings.symbolFirst)}
+        {/if}
+      </p>
+    {/if}
+  </div>
+
+  <h3>{$t('weekly.archive')}</h3>
+  <ul class="archive">
+    {#each archive as a (a.week)}
+      <li class:current={a.week === currentWeek}>
+        <span>{a.week}</span>
+        <span>{a.score}</span>
+      </li>
+    {/each}
+  </ul>
+  <div class="compare">
+    <input type="text" bind:value={compareInput} placeholder={$t('compare.paste')} />
+    <button onclick={doCompare}>{$t('compare.go')}</button>
+  </div>
+  {#if compareMsg}<p class="compare-msg">{compareMsg}</p>{/if}
 
   <h3>{$t('stats.errors')}</h3>
   <ul>
@@ -153,4 +267,34 @@
   .dot { fill: var(--cream); }
   .lbl { fill: var(--cream); opacity: 0.6; font-size: 6px; text-anchor: middle; }
   .acc-line { fill: none; stroke: var(--cream); stroke-width: 1.5; opacity: 0.8; }
+
+  .calendar { background: var(--wood-light); border-radius: var(--radius); padding: 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; font-weight: bold; }
+  .cal-nav { background: none; min-width: 32px; min-height: 32px; font-size: 1.2rem; padding: 0; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; }
+  .cal-weekdays { font-size: 0.75rem; opacity: 0.7; text-align: center; }
+  .cal-wd { text-align: center; }
+  .cal-day {
+    position: relative; background: rgb(0 0 0 / 0.25); color: var(--cream);
+    min-width: 0; min-height: 36px; font-size: 0.8rem; border-radius: 8px; padding: 0;
+  }
+  .cal-day.empty { background: none; min-height: 36px; min-width: 0; cursor: default; }
+  .cal-day.soft { background: var(--accent); opacity: 0.5; }
+  .cal-day.strong { background: var(--accent); color: var(--ink); font-weight: bold; opacity: 1; }
+  .cal-day.selected { outline: 2px solid var(--cream); }
+  .rec-dot { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--cream); }
+  .cal-day.strong .rec-dot { background: var(--ink); }
+  .cal-detail { font-size: 0.85rem; opacity: 0.9; }
+
+  .archive { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+  .archive li {
+    display: flex; justify-content: space-between;
+    background: var(--wood-light); border-radius: var(--radius); padding: 0.4rem 0.6rem;
+  }
+  .archive li.current { outline: 2px solid var(--accent); }
+
+  .compare { display: flex; gap: 0.4rem; }
+  .compare input { flex: 1; font: inherit; padding: 0.4rem 0.6rem; border-radius: var(--radius); border: none; min-height: 44px; }
+  .compare button { background: var(--accent); color: var(--ink); }
+  .compare-msg { font-size: 0.9rem; }
 </style>

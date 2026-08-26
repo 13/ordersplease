@@ -10,7 +10,7 @@
 
   let {
     session, level, stars, wasNewHigh, onretry, onshare = null, shareLabel = '', note = null,
-    levelName = null, celebrate = false,
+    levelName = null, celebrate = false, compareCode = null,
   }: {
     session: SessionState;
     level: number;
@@ -22,7 +22,14 @@
     note?: string | null;
     levelName?: string | null;
     celebrate?: boolean;
+    compareCode?: string | null;
   } = $props();
+
+  let codeCopied = $state(false);
+  function copyCode() {
+    if (!compareCode) return;
+    navigator.clipboard?.writeText(compareCode).then(() => (codeCopied = true)).catch(() => {});
+  }
 
   const fullRounds = $derived(session.roundLog.filter((e) => !e.sub));
   const served = $derived(fullRounds.filter((e) => e.success).length);
@@ -92,6 +99,9 @@
     {#if onshare}
       <button onclick={onshare}>{shareLabel}</button>
     {/if}
+    {#if compareCode}
+      <button class="code" onclick={copyCode}>{codeCopied ? $t('daily.copied') : compareCode}</button>
+    {/if}
     {#if session.mode === 'level' && session.finished === 'won' && level < MAX_LEVEL}
       <button onclick={() => go(`game/${level + 1}`)}>{$t('result.next')}</button>
     {/if}
@@ -130,4 +140,8 @@
     box-shadow: 0 3px 0 rgb(0 0 0 / 0.3);
   }
   .overlay-actions button:active { transform: translateY(1px); box-shadow: 0 2px 0 rgb(0 0 0 / 0.3); }
+  .overlay-actions button.code {
+    background: none; color: var(--cream); box-shadow: none; font-size: 0.85rem;
+    letter-spacing: 0.03em; opacity: 0.85; min-height: 32px;
+  }
 </style>
