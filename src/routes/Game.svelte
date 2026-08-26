@@ -781,7 +781,7 @@
             showKeys={false}
             finishMode={round.changeDue === 0}
             {askOpen}
-            ontake={take} onreturn={ret} onconfirm={confirmChange}
+            ontake={take} onreturn={ret} onconfirm={submitTyped}
             ontoggleask={() => (askOpen = !askOpen)}
             onask={onAsk} onnotenough={onNotEnough} ontipp={onTipp}
             tippHint={tipJar >= 50 ? ` (${formatEuro(50, symbolFirst)})` : ' (−25)'}
