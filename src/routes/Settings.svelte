@@ -5,7 +5,7 @@
   import { settings } from '../stores/settings';
   import { progress } from '../stores/progress';
   import { stats, EMPTY } from '../stores/stats';
-  import { customMenu } from '../stores/menu';
+  import { menuProfiles, activeProfileId } from '../stores/menu';
   import { history } from '../stores/history';
   import { DEFAULT_MENU } from '../core/menu';
 
@@ -15,7 +15,9 @@
     if (!confirm($t('settings.reset-confirm'))) return;
     progress.set({ stars: {} });
     stats.set(structuredClone(EMPTY));
-    customMenu.set(DEFAULT_MENU.map((m) => ({ ...m })));
+    const name = $settings.locale === 'de' ? 'Meine Karte' : 'My Menu';
+    menuProfiles.set([{ id: 'my-menu', name, items: DEFAULT_MENU.map((m) => ({ ...m })) }]);
+    activeProfileId.set('my-menu');
     history.set({});
   }
 </script>

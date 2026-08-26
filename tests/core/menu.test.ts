@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_MENU, validateItem, applyPriceStyle } from '$core/menu';
+import { DEFAULT_MENU, validateItem, applyPriceStyle, parseImportedProfile } from '$core/menu';
 
 describe('menu', () => {
   it('default menu has the spec drinks', () => {
@@ -81,5 +81,46 @@ describe('round-4 menu', () => {
     expect(once[0]).toMatchObject({ priceCents: 440, category: 'drink' });
     expect(migrateMenuItems(once)).toEqual(once);
     expect(migrateMenuItems([{ id: 'y', name: 'Y', priceCents: 4 }])[0].priceCents).toBe(10);
+  });
+});
+
+describe('parseImportedProfile', () => {
+  it('accepts a well-formed profile', () => {
+    const p = parseImportedProfile({
+      name: 'Kirchweih',
+      items: [{ id: 'a', name: 'Bier', priceCents: 350, category: 'drink' }],
+    });
+    expect(p).not.toBeNull();
+    expect(p!.name).toBe('Kirchweih');
+    expect(p!.items).toEqual([{ id: 'a', name: 'Bier', priceCents: 350, category: 'drink' }]);
+  });
+  it('assigns a fresh id and defaults category to drink', () => {
+    const p = parseImportedProfile({ name: 'X', items: [{ name: 'Y', priceCents: 100 }] });
+    expect(p!.items[0].id).toBeTruthy();
+    expect(p!.items[0].category).toBe('drink');
+  });
+  it('rejects missing/blank name', () => {
+    expect(parseImportedProfile({ items: [{ name: 'Y', priceCents: 100 }] })).toBeNull();
+    expect(parseImportedProfile({ name: '  ', items: [{ name: 'Y', priceCents: 100 }] })).toBeNull();
+  });
+  it('rejects empty or missing items', () => {
+    expect(parseImportedProfile({ name: 'X', items: [] })).toBeNull();
+    expect(parseImportedProfile({ name: 'X' })).toBeNull();
+  });
+  it('rejects an invalid item anywhere in the list', () => {
+    expect(parseImportedProfile({
+      name: 'X',
+      items: [{ name: 'Ok', priceCents: 100 }, { name: '', priceCents: 100 }],
+    })).toBeNull();
+    expect(parseImportedProfile({
+      name: 'X',
+      items: [{ name: 'Ok', priceCents: 105 }], // not a 10c multiple
+    })).toBeNull();
+  });
+  it('rejects non-object input without throwing', () => {
+    expect(parseImportedProfile(null)).toBeNull();
+    expect(parseImportedProfile('hello')).toBeNull();
+    expect(parseImportedProfile(42)).toBeNull();
+    expect(parseImportedProfile([1, 2, 3])).toBeNull();
   });
 });

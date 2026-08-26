@@ -7,6 +7,16 @@ export interface MenuItem {
   category?: 'drink' | 'food';
 }
 
+export interface MenuProfile {
+  id: string;
+  name: string;
+  items: MenuItem[];
+}
+
+export function newProfileId(): string {
+  return `menu-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+}
+
 export type PriceStyle = 'round' | 'half' | 'tens' | 'any';
 
 export const DEFAULT_MENU: MenuItem[] = [
@@ -69,4 +79,29 @@ export function migrateMenuItems(items: MenuItem[]): MenuItem[] {
     priceCents: Math.max(10, Math.round(m.priceCents / 10) * 10),
     category: m.category ?? 'drink',
   }));
+}
+
+/** Parses and validates an imported menu profile (untrusted JSON). Returns
+ *  null on any structural or item-level problem — never throws. */
+export function parseImportedProfile(raw: unknown): MenuProfile | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const obj = raw as Record<string, unknown>;
+  const name = typeof obj.name === 'string' ? obj.name.trim() : '';
+  if (name === '' || !Array.isArray(obj.items) || obj.items.length === 0) return null;
+
+  const items: MenuItem[] = [];
+  for (const [i, raw2] of obj.items.entries()) {
+    if (typeof raw2 !== 'object' || raw2 === null) return null;
+    const it = raw2 as Record<string, unknown>;
+    const itemName = typeof it.name === 'string' ? it.name : '';
+    const priceCents = typeof it.priceCents === 'number' ? it.priceCents : NaN;
+    if (validateItem(itemName, priceCents)) return null; // non-null = error code
+    items.push({
+      id: typeof it.id === 'string' && it.id !== '' ? it.id : `import-${i}-${Date.now()}`,
+      name: itemName.trim(),
+      priceCents,
+      category: it.category === 'food' ? 'food' : 'drink',
+    });
+  }
+  return { id: newProfileId(), name, items };
 }
