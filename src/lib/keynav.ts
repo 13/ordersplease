@@ -38,13 +38,19 @@ export function keynav(node: HTMLElement) {
     const v = getComputedStyle(el).getPropertyValue('--keynav-cols').trim();
     return v ? Number(v) : 1;
   }
+  const VIM: Record<string, string> = {
+    h: 'ArrowLeft', j: 'ArrowDown', k: 'ArrowUp', l: 'ArrowRight',
+  };
   function onKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    if (target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return;
+    const key = VIM[e.key] ?? e.key;
     const keys = ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'];
-    if (!keys.includes(e.key)) return;
+    if (!keys.includes(key)) return;
     const all = [...node.querySelectorAll<HTMLButtonElement>('button')];
     const current = all.indexOf(document.activeElement as HTMLButtonElement);
     if (current === -1) return;
-    const next = nextIndex(all.map((b) => !b.disabled), current, e.key, cols());
+    const next = nextIndex(all.map((b) => !b.disabled), current, key, cols());
     if (next === null) return;
     e.preventDefault();
     all[next].focus();
