@@ -43,6 +43,7 @@
   import { denomLabel } from '../lib/denom-view';
   import { focusFirst } from '../lib/focus';
   import { chaChing, coinClink, errorBuzz, fanfare, tickTock } from '../lib/sound';
+  import { vibrate } from '../lib/haptics';
   import { PausableTimer } from '../lib/pausable';
   import { canMakeChange, makeChange } from '../core/change';
   import { markSeen } from '../stores/seen';
@@ -52,6 +53,7 @@
   import PauseOverlay from '../lib/PauseOverlay.svelte';
   import ExplainerCard from '../lib/ExplainerCard.svelte';
   import type { NumpadApi } from '../lib/Numpad.svelte';
+  import GameHeader from '../lib/GameHeader.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
   import PatienceBar from '../lib/PatienceBar.svelte';
   import SumPhase from '../lib/SumPhase.svelte';
@@ -302,8 +304,12 @@
     stats.update((s) => recordDay(recordRound(s, done.errors, ms, failed), new Date()));
     if (failed) {
       errorBuzz($settings.sound);
+      vibrate(60, $settings.haptics ?? true);
       pulseHearts();
-    } else chaChing($settings.sound);
+    } else {
+      chaChing($settings.sound);
+      vibrate(20, $settings.haptics ?? true);
+    }
     const frac = patienceFrac(session);
     const groupTotal = splitGroups
       ? splitGroups.reduce((s, g) => s + orderTotal(g), 0)
@@ -743,6 +749,7 @@
           startRound();
         }, 1000);
         pulseHearts();
+        vibrate(60, $settings.haptics ?? true);
       }
       if (round && session.queue[0]
           && session.queue[0].patienceMs < session.queue[0].maxPatienceMs * 0.25) {
@@ -765,18 +772,18 @@
 
 <svelte:window onkeydown={onKey} />
 <main class="game" bind:this={mainEl}>
-  <header>
-    <span class="lives" class:pulse={heartPulse}>{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
-    <span>{mode === 'level' ? `${level} · ${$t(`level.name.${level}`)}`
-      : mode === 'rush' ? `${$t('game.rush')} · ${session.level >= MAX_LEVEL ? '30+' : session.level}`
+  <GameHeader
+    lives={MAX_LIVES - session.livesLost} {heartPulse}
+    title={mode === 'level' ? `${level} · ${$t(`level.name.${level}`)}`
+      : mode === 'rush' ? `${$t('game.rush')} · ${session.level >= MAX_LEVEL ? '40+' : session.level}`
       : mode === 'practice' ? $t('practice.title')
       : mode === 'weekly' ? $t('weekly.title')
-      : $t('daily.title')}</span>
-    {#if session.streak >= 3}<span class="flame">🔥{session.streak}</span>{/if}
-    {#if tipJar > 0}<span class="jar">🫙 {formatEuro(tipJar, symbolFirst)}</span>{/if}
-    <span>{$t('game.score')}: {session.score}</span>
-    <button class="menu-btn" aria-label={$t('game.menu')} onclick={() => setPaused(true, true)}>☰</button>
-  </header>
+      : $t('daily.title')}
+    streak={session.streak}
+    {tipJar} tipJarText={formatEuro(tipJar, symbolFirst)}
+    score={session.score} scoreLabel={$t('game.score')}
+    menuLabel={$t('game.menu')} onmenu={() => setPaused(true, true)}
+  />
 
   {#if happyHour || rowdy}
     <div class="chips">
@@ -883,11 +890,6 @@
     display: flex; flex-direction: column; gap: 0.75rem;
     max-width: 480px; margin: 0 auto; padding: 0.75rem; min-height: 100dvh;
   }
-  header { display: flex; justify-content: space-between; align-items: center; }
-  .lives { color: var(--danger); }
-  .lives.pulse { animation: op-pulse 0.5s ease-in-out; }
-  .jar { font-size: 0.9rem; }
-  .menu-btn { background: none; color: var(--cream); font-size: 1.2rem; padding: 0 0.3rem; min-height: 0; }
   .chips { display: flex; gap: 0.4rem; }
   .chip {
     background: var(--accent); color: var(--ink);
@@ -895,7 +897,6 @@
     font-size: 0.8rem; font-weight: bold;
     animation: op-slide-up 0.2s ease-out;
   }
-  .flame { color: var(--accent); font-weight: bold; animation: op-pop 0.3s ease-out; }
   .queue { display: flex; gap: 0.75rem; min-height: 40px; }
   .customer { width: 64px; opacity: 0.5; }
   .customer.active { opacity: 1; }
