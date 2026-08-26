@@ -863,10 +863,10 @@
   .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
   .flash {
-    position: fixed; inset: auto 0 30% 0; margin: 0 auto; width: fit-content;
+    position: fixed; inset: 16% 0 auto 0; margin: 0 auto; width: fit-content;
     background: var(--cream); color: var(--ink);
     padding: 0.75rem 1.5rem; border-radius: var(--radius);
     font-size: 1.3rem; font-weight: bold;
   }
-  .badge-toast { bottom: 12%; background: var(--accent); }
+  .badge-toast { inset: auto 0 12% 0; background: var(--accent); }
 </style>
