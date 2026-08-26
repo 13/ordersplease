@@ -33,16 +33,16 @@
   import { newBadges } from '../core/badges';
   import { renderOrder, renderAmendment, renderWave, renderPayer } from '../core/text-order';
   import { starsFor } from '../core/scoring';
-  import { formatEuro } from '../core/money';
+  import { formatEuro, parseEntry } from '../core/money';
   import { happyHourActive, discountMenu } from '../core/happy-hour';
   import { tipFor, tipEligible } from '../core/tips';
   import { history, recordDayEntry, pruneHistory, localDayKey } from '../stores/history';
-  import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
+  import { COIN_DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
   import { focusFirst } from '../lib/focus';
   import { chaChing, coinClink, errorBuzz, fanfare, tickTock } from '../lib/sound';
   import { PausableTimer } from '../lib/pausable';
-  import { canMakeChange } from '../core/change';
+  import { canMakeChange, makeChange } from '../core/change';
   import { markSeen } from '../stores/seen';
   import EndOverlay from '../lib/EndOverlay.svelte';
   import CoinBurst from '../lib/CoinBurst.svelte';
@@ -84,6 +84,7 @@
   let pile = $state<Denom[]>([]);
   let menuHidden = $state(false);
   let askOpen = $state(false);
+  let typedChange = $state('');
   let flash = $state<string | null>(null);
   let heartPulse = $state(false);
   let dispute = $state<Dispute | null>(null);
@@ -103,14 +104,6 @@
   let explaining = $state<string | null>(null);
   let numpadLocked = $state(false);
   let numpadApi: NumpadApi | null = null;
-  let hasKeyboard = $state(false); // becomes true on first physical keydown → shows badges
-  const wideQuery = matchMedia('(min-width: 700px)');
-  let wideScreen = $state(wideQuery.matches);
-  $effect(() => {
-    const on = (e: MediaQueryListEvent) => (wideScreen = e.matches);
-    wideQuery.addEventListener('change', on);
-    return () => wideQuery.removeEventListener('change', on);
-  });
   let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
   let payerIndex = $state(0);
   let mainEl = $state<HTMLElement | null>(null);
@@ -162,6 +155,7 @@
     amendText = null;
     pile = [];
     askOpen = false;
+    typedChange = '';
     hintText = null;
     hintIndex = 0;
     hintDebt = 0;
@@ -280,6 +274,7 @@
     disputeOptRoll = session.rng();
     pile = [];
     askOpen = false;
+    typedChange = '';
     hintText = null;
     hintIndex = 0;
     hintDebt = 0;
@@ -350,6 +345,7 @@
     round = null;
     pile = [];
     askOpen = false; // don't let a stale ask row eat the next Escape during the flash
+    typedChange = '';
     if (done.success === true && done.usedTrapCall) trapCaught = true;
     if (done.success === true && done.kind === 'tab') tabServed = true;
     if (done.success === true && splitGroups) splitServed = true;
@@ -377,6 +373,7 @@
   }
 
   function take(d: Denom) {
+    typedChange = '';
     if ((tillView[d] ?? 0) > 0) {
       pile = [...pile, d];
       coinClink($settings.sound);
@@ -436,6 +433,39 @@
     hintIndex += 1;
     if (tipJar >= 50) tipJar -= 50;
     else hintDebt += 25;
+  }
+
+  function typeChange(d: string) {
+    if (typedChange === '') pile = []; // typing replaces the clicked pile
+    if (d === ',') {
+      if (typedChange.includes(',')) return;
+      typedChange = typedChange === '' ? '0,' : typedChange + ',';
+      return;
+    }
+    const [euros, cents] = typedChange.split(',');
+    if (cents !== undefined) {
+      if (cents.length >= 2) return;
+    } else if (euros.length >= 4) return;
+    typedChange += d;
+  }
+
+  function submitTyped() {
+    if (!round) return;
+    if (typedChange === '') {
+      confirmChange();
+      return;
+    }
+    const amount = parseEntry(typedChange);
+    typedChange = '';
+    const pieces = makeChange(round.till, amount);
+    if (pieces === null && amount === round.changeDue) {
+      // computed correctly but the till cannot pay — steer into the ask flow
+      errorBuzz($settings.sound);
+      askOpen = true;
+      return;
+    }
+    pile = pieces ?? [];
+    confirmChange();
   }
 
   function resolveDispute(chosen: number) {
@@ -562,7 +592,7 @@
 
   function setPaused(on: boolean, menu = false) {
     if (session.finished) return;
-    if (on) askOpen = false; // a stale open ask row would swallow the resume Escape
+    if (on) { askOpen = false; typedChange = ''; } // a stale open ask row would swallow the resume Escape
     paused = on;
     pauseMenu = on && menu;
     const timers = [amendT, menuT, flashT, waveT];
@@ -593,6 +623,11 @@
       return;
     }
     if (k === 'Escape') {
+      if (typedChange !== '') {
+        typedChange = '';
+        e.preventDefault();
+        return;
+      }
       if (askOpen) {
         askOpen = false;
         e.preventDefault();
@@ -619,7 +654,6 @@
       }
       return;
     }
-    hasKeyboard = true;
     if (!round) return;
     if (round.phase === 'sum' && !numpadLocked) {
       if (/^[0-9]$/.test(k)) { numpadApi?.press(k); e.preventDefault(); }
@@ -633,12 +667,14 @@
         e.preventDefault();
         return;
       }
-      if (/^[0-9]$/.test(k)) {
-        if (round.changeDue === 0) return; // Finish rounds: till is disabled for keys too
-        if (k === '0') return; // only 9 denominations
-        take(DENOMS[Number(k) - 1]);
+      if (/^[0-9]$/.test(k) || k === ',' || k === '.') {
+        if (round.changeDue === 0) return; // Finish rounds: nothing to type
+        typeChange(k === '.' ? ',' : k);
         e.preventDefault();
-      } else if (k === 'Enter') { confirmChange(); e.preventDefault(); }
+      } else if (k === 'Backspace') {
+        typedChange = typedChange.slice(0, -1);
+        e.preventDefault();
+      } else if (k === 'Enter') { submitTyped(); e.preventDefault(); }
       else if (k === 'a' || k === 'A') { askOpen = !askOpen; e.preventDefault(); }
       else if (k === 'n' || k === 'N') { onNotEnough(); e.preventDefault(); }
       else if (k === 't' || k === 'T') { onTipp(); e.preventDefault(); }
@@ -740,13 +776,14 @@
             paymentPieces={round.paymentPieces}
             {tillView} {pile}
             showPileTotal={session.params.showPileTotal}
-            showKeys={hasKeyboard || wideScreen}
+            showKeys={false}
             finishMode={round.changeDue === 0}
             {askOpen}
             ontake={take} onreturn={ret} onconfirm={confirmChange}
             ontoggleask={() => (askOpen = !askOpen)}
             onask={onAsk} onnotenough={onNotEnough} ontipp={onTipp}
             tippHint={tipJar >= 50 ? ` (${formatEuro(50, symbolFirst)})` : ' (−25)'}
+            typedDisplay={typedChange === '' ? '' : formatEuro(parseEntry(typedChange), symbolFirst)}
           />
         {/if}
       </div>

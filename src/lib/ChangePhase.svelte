@@ -10,13 +10,14 @@
   let {
     paymentPieces, tillView, pile, showPileTotal, showKeys, finishMode, askOpen,
     ontake, onreturn, onconfirm, ontoggleask, onask, onnotenough, ontipp, tippHint = '',
-    showExtras = true,
+    showExtras = true, typedDisplay = '',
   }: {
     paymentPieces: Denom[]; tillView: Till; pile: Denom[];
     showPileTotal: boolean; showKeys: boolean; finishMode: boolean; askOpen: boolean;
     ontake: (d: Denom) => void; onreturn: (index: number) => void;
     onconfirm: () => void; ontoggleask: () => void; onask: (d: Denom) => void;
     onnotenough: () => void; ontipp: () => void; tippHint?: string; showExtras?: boolean;
+    typedDisplay?: string;
   } = $props();
 </script>
 
@@ -37,6 +38,9 @@
     {/each}
   </div>
 {/if}
+{#if typedDisplay !== ''}
+  <div class="typed">⌨ {typedDisplay} <small>{$t('game.typed-hint')}</small></div>
+{/if}
 <div class="actions">
   <button class="confirm" onclick={onconfirm}>
     {finishMode ? $t('game.finish') : $t('game.confirm')}
@@ -50,6 +54,14 @@
 
 <style>
   .prompt { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: baseline; }
+  .typed {
+    background: var(--cream); color: var(--ink);
+    border-radius: var(--radius); padding: 0.4rem 0.8rem;
+    font-size: 1.2rem; font-weight: bold; font-variant-numeric: tabular-nums;
+    display: flex; align-items: baseline; gap: 0.6rem;
+    animation: op-slide-up 0.15s ease-out;
+  }
+  .typed small { font-weight: normal; font-size: 0.7rem; opacity: 0.7; }
   .actions {
     display: flex; gap: 0.5rem;
     position: sticky; bottom: 0;

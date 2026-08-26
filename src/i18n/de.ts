@@ -33,6 +33,7 @@ export default {
   'game.dispute-right': 'Gutes Gedächtnis! +25',
   'game.dispute-wrong-msg': 'Es waren {note}. −50',
   'game.tipp': 'Tipp',
+  'game.typed-hint': 'Enter gibt dieses Wechselgeld',
   'game.happy-hour': 'Happy Hour!',
   'game.rowdy': 'In Eile!',
   'praise.1.1': 'Passt!',
