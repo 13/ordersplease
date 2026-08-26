@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '../i18n';
+  import { keynav } from '../lib/keynav';
   import { go } from '../lib/router';
   import { customMenu } from '../stores/menu';
   import { settings } from '../stores/settings';
@@ -38,7 +39,7 @@
   }
 </script>
 
-<main class="editor">
+<main class="editor" use:keynav>
   <h2><button class="back" onclick={() => go('home')} aria-label={$t('nav.back')}>←</button> {$t('menu.title')}</h2>
 
   <label class="toggle">
