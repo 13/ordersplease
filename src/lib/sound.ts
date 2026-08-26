@@ -1,5 +1,10 @@
 // src/lib/sound.ts
 let ctx: AudioContext | null = null;
+let volume = 1;
+
+export function setVolume(v: number): void {
+  volume = Math.min(1, Math.max(0, v));
+}
 
 function tone(
   freq: number, durS: number, gain = 0.08,
@@ -11,7 +16,7 @@ function tone(
   o.type = type;
   o.frequency.value = freq;
   const t0 = ctx.currentTime + startOffset;
-  g.gain.setValueAtTime(gain, t0);
+  g.gain.setValueAtTime(Math.max(0.0001, gain * volume), t0);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + durS);
   o.connect(g).connect(ctx.destination);
   o.start(t0);

@@ -18,6 +18,8 @@
     dailySeed, dailyLevelFor, DAILY_ORDERS, isRanked, nextDailyRecord, shareText,
   } from '../core/daily';
   import { daily } from '../stores/daily';
+  import { weeklySeed, weeklyLevelFor, WEEKLY_ORDERS, nextWeeklyRecord, weeklyShareText } from '../core/weekly';
+  import { weekly } from '../stores/weekly';
   import { badges } from '../stores/badges';
   import {
     createRound, submitSum, submitChange, askCustomer, timeoutRound, challengePayment, markHint,
@@ -37,10 +39,11 @@
   import { happyHourActive, discountMenu } from '../core/happy-hour';
   import { tipFor, tipEligible } from '../core/tips';
   import { history, recordDayEntry, pruneHistory, localDayKey } from '../stores/history';
-  import { COIN_DENOMS, type Denom } from '../core/till';
+  import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
   import { focusFirst } from '../lib/focus';
   import { chaChing, coinClink, errorBuzz, fanfare, tickTock } from '../lib/sound';
+  import { vibrate } from '../lib/haptics';
   import { PausableTimer } from '../lib/pausable';
   import { canMakeChange, makeChange } from '../core/change';
   import { markSeen } from '../stores/seen';
@@ -50,6 +53,7 @@
   import PauseOverlay from '../lib/PauseOverlay.svelte';
   import ExplainerCard from '../lib/ExplainerCard.svelte';
   import type { NumpadApi } from '../lib/Numpad.svelte';
+  import GameHeader from '../lib/GameHeader.svelte';
   import MenuCard from '../lib/MenuCard.svelte';
   import PatienceBar from '../lib/PatienceBar.svelte';
   import SumPhase from '../lib/SumPhase.svelte';
@@ -66,10 +70,14 @@
       ? practiceParams(skill)
       : mode === 'daily'
         ? { ...paramsForLevel(dailyLevelFor(0)), ordersPerLevel: DAILY_ORDERS }
-        : undefined;
-    const seed = mode === 'daily' ? dailySeed(new Date()) : Date.now() % 2 ** 31;
+        : mode === 'weekly'
+          ? { ...paramsForLevel(weeklyLevelFor(0)), ordersPerLevel: WEEKLY_ORDERS }
+          : undefined;
+    const seed = mode === 'daily' ? dailySeed(new Date())
+      : mode === 'weekly' ? weeklySeed(new Date())
+      : Date.now() % 2 ** 31;
     rankedRun = mode === 'daily' ? isRanked(get(daily), new Date()) : false;
-    const isDaily = mode === 'daily';
+    const isDaily = mode === 'daily' || mode === 'weekly';
     return createSession(
       mode, level,
       isDaily ? localizedDefaultMenu(get(settings).locale) : get(activeMenu),
@@ -86,6 +94,7 @@
   let askOpen = $state(false);
   let typedChange = $state('');
   let flash = $state<string | null>(null);
+  let errorFlash = $state<string | null>(null);
   let heartPulse = $state(false);
   let dispute = $state<Dispute | null>(null);
   let disputeOpts = $state<number[]>([]);           // fixed at dialog-open time; never roll rng in markup
@@ -98,6 +107,7 @@
   const amendT = new PausableTimer();
   const menuT = new PausableTimer();
   const flashT = new PausableTimer();
+  const errT = new PausableTimer();
   const waveT = new PausableTimer();
   let paused = $state(false);
   let pauseMenu = $state(false);
@@ -294,13 +304,17 @@
     stats.update((s) => recordDay(recordRound(s, done.errors, ms, failed), new Date()));
     if (failed) {
       errorBuzz($settings.sound);
+      vibrate(60, $settings.haptics ?? true);
       pulseHearts();
-    } else chaChing($settings.sound);
+    } else {
+      chaChing($settings.sound);
+      vibrate(20, $settings.haptics ?? true);
+    }
     const frac = patienceFrac(session);
     const groupTotal = splitGroups
       ? splitGroups.reduce((s, g) => s + orderTotal(g), 0)
       : done.order.totalCents;
-    const earnsTip = (mode === 'level' || mode === 'rush' || mode === 'daily')
+    const earnsTip = (mode === 'level' || mode === 'rush' || mode === 'daily' || mode === 'weekly')
       && tipEligible({
         success: done.success === true,
         firstTry: done.sumTries === 0 && done.changeTries === 0,
@@ -369,11 +383,14 @@
       else if (round.changeDue > 0 && !canMakeChange(round.till, round.changeDue)) maybeExplain('shortage');
     }
     if (round.phase === 'done') finishRound();
-    else if (round.sumTries > 0 && round.phase === 'sum') errorBuzz($settings.sound);
+    else if (round.sumTries > 0 && round.phase === 'sum') {
+      errorBuzz($settings.sound);
+      showError('err.sum');
+    }
   }
 
   function take(d: Denom) {
-    typedChange = '';
+    if (get(settings).amountEntry) typedChange = '';
     if ((tillView[d] ?? 0) > 0) {
       pile = [...pile, d];
       coinClink($settings.sound);
@@ -401,6 +418,7 @@
     } else {
       pile = [];
       errorBuzz($settings.sound);
+      showError('err.change');
     }
   }
   function onAsk(d: Denom) {
@@ -436,7 +454,7 @@
   }
 
   function typeChange(d: string) {
-    if (typedChange === '') pile = []; // typing replaces the clicked pile
+    if (typedChange === '' && get(settings).amountEntry) pile = []; // typing replaces the clicked pile
     if (d === ',') {
       if (typedChange.includes(',')) return;
       typedChange = typedChange === '' ? '0,' : typedChange + ',';
@@ -457,6 +475,19 @@
     }
     const amount = parseEntry(typedChange);
     typedChange = '';
+    if (!get(settings).amountEntry) {
+      // pieces mode: the entry names one denomination
+      const d = amount as Denom;
+      if (!(DENOMS as readonly number[]).includes(d) || (tillView[d] ?? 0) <= 0) {
+        errorBuzz($settings.sound);
+        showError('err.denom');
+        return;
+      }
+      pile = [...pile, d];
+      coinClink($settings.sound);
+      return;
+    }
+    // classic amount mode (round 7)
     const pieces = makeChange(round.till, amount);
     if (pieces === null && amount === round.changeDue) {
       // computed correctly but the till cannot pay — steer into the ask flow
@@ -496,9 +527,11 @@
     waveT.clear();
     menuT.clear();
     flashT.clear();
+    errT.clear();
     session = newSession();
     round = null;
     flash = null;
+    errorFlash = null;
     dispute = null;
     disputeVerdict = null;
     finalized = false;
@@ -546,6 +579,9 @@
       const perfect = fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success);
       daily.update((prev) => nextDailyRecord(prev, new Date(), session.score, perfect));
     }
+    if (session.mode === 'weekly') {
+      weekly.update((prev) => nextWeeklyRecord(prev, new Date(), session.score));
+    }
     bigWin = (session.mode === 'level' && session.finished === 'won' && stars === 3)
       || (session.mode === 'rush' && wasNewHigh)
       || (session.mode === 'daily'
@@ -578,9 +614,9 @@
 
   function doShare() {
     const served = session.roundLog.filter((e) => !e.sub && e.success).length;
-    const text = shareText(
-      new Date(), session.score, served, DAILY_ORDERS, get(daily)?.streak ?? 1,
-    );
+    const text = session.mode === 'weekly'
+      ? weeklyShareText(new Date(), session.score, served, WEEKLY_ORDERS)
+      : shareText(new Date(), session.score, served, DAILY_ORDERS, get(daily)?.streak ?? 1);
     navigator.clipboard?.writeText(text).then(() => (shareCopied = true)).catch(() => {});
   }
 
@@ -590,13 +626,19 @@
     setTimeout(() => (heartPulse = false), 600);
   }
 
+  function showError(key: string) {
+    errorFlash = $t(key);
+    errT.clear();
+    errT.start(() => (errorFlash = null), 1100);
+  }
+
   function setPaused(on: boolean, menu = false) {
     if (session.finished) return;
     if (explaining) return; // explainer owns the freeze — no pause stacking (mirrors onKey)
     if (on) { askOpen = false; typedChange = ''; } // a stale open ask row would swallow the resume Escape
     paused = on;
     pauseMenu = on && menu;
-    const timers = [amendT, menuT, flashT, waveT];
+    const timers = [amendT, menuT, flashT, errT, waveT];
     for (const t of timers) on ? t.pause() : t.resume();
     if (!on) tick().then(() => focusFirst(mainEl));
   }
@@ -604,11 +646,11 @@
   function maybeExplain(id: string) {
     if (!markSeen(id)) return;
     explaining = id;
-    for (const tm of [amendT, menuT, flashT, waveT]) tm.pause();
+    for (const tm of [amendT, menuT, flashT, errT, waveT]) tm.pause();
   }
   function dismissExplain() {
     explaining = null;
-    for (const tm of [amendT, menuT, flashT, waveT]) tm.resume();
+    for (const tm of [amendT, menuT, flashT, errT, waveT]) tm.resume();
     focusFirst(mainEl);
   }
 
@@ -707,6 +749,7 @@
           startRound();
         }, 1000);
         pulseHearts();
+        vibrate(60, $settings.haptics ?? true);
       }
       if (round && session.queue[0]
           && session.queue[0].patienceMs < session.queue[0].maxPatienceMs * 0.25) {
@@ -722,23 +765,25 @@
       waveT.clear();
       menuT.clear();
       flashT.clear();
+      errT.clear();
     };
   });
 </script>
 
 <svelte:window onkeydown={onKey} />
 <main class="game" bind:this={mainEl}>
-  <header>
-    <span class="lives" class:pulse={heartPulse}>{'♥'.repeat(Math.max(0, MAX_LIVES - session.livesLost))}</span>
-    <span>{mode === 'level' ? `${level} · ${$t(`level.name.${level}`)}`
-      : mode === 'rush' ? `${$t('game.rush')} · ${session.level >= MAX_LEVEL ? '30+' : session.level}`
+  <GameHeader
+    lives={MAX_LIVES - session.livesLost} {heartPulse}
+    title={mode === 'level' ? `${level} · ${$t(`level.name.${level}`)}`
+      : mode === 'rush' ? `${$t('game.rush')} · ${session.level >= MAX_LEVEL ? '40+' : session.level}`
       : mode === 'practice' ? $t('practice.title')
-      : $t('daily.title')}</span>
-    {#if session.streak >= 3}<span class="flame">🔥{session.streak}</span>{/if}
-    {#if tipJar > 0}<span class="jar">🫙 {formatEuro(tipJar, symbolFirst)}</span>{/if}
-    <span>{$t('game.score')}: {session.score}</span>
-    <button class="menu-btn" aria-label={$t('game.menu')} onclick={() => setPaused(true, true)}>☰</button>
-  </header>
+      : mode === 'weekly' ? $t('weekly.title')
+      : $t('daily.title')}
+    streak={session.streak}
+    {tipJar} tipJarText={formatEuro(tipJar, symbolFirst)}
+    score={session.score} scoreLabel={$t('game.score')}
+    menuLabel={$t('game.menu')} onmenu={() => setPaused(true, true)}
+  />
 
   {#if happyHour || rowdy}
     <div class="chips">
@@ -786,6 +831,7 @@
             onask={onAsk} onnotenough={onNotEnough} ontipp={onTipp}
             tippHint={tipJar >= 50 ? ` (${formatEuro(50, symbolFirst)})` : ' (−25)'}
             typedDisplay={typedChange === '' ? '' : formatEuro(parseEntry(typedChange), symbolFirst)}
+            typedHint={$settings.amountEntry ? $t('game.typed-hint') : $t('game.typed-hint-piece')}
           />
         {/if}
       </div>
@@ -795,11 +841,12 @@
   <CoinBurst {burstKey} />
 
   {#if flash}<div class="flash">{flash}</div>{/if}
+  {#if errorFlash}<div class="flash err-flash">{errorFlash}</div>{/if}
 
   {#if session.finished && finalized}
     <EndOverlay
       {session} {level} {stars} {wasNewHigh} onretry={restart}
-      onshare={mode === 'daily' ? doShare : null}
+      onshare={mode === 'daily' || mode === 'weekly' ? doShare : null}
       shareLabel={shareCopied ? $t('daily.copied') : $t('daily.share')}
       note={mode === 'daily' && !rankedRun ? $t('daily.unranked') : null}
       levelName={mode === 'level' ? $t(`level.name.${level}`) : null}
@@ -843,11 +890,6 @@
     display: flex; flex-direction: column; gap: 0.75rem;
     max-width: 480px; margin: 0 auto; padding: 0.75rem; min-height: 100dvh;
   }
-  header { display: flex; justify-content: space-between; align-items: center; }
-  .lives { color: var(--danger); }
-  .lives.pulse { animation: op-pulse 0.5s ease-in-out; }
-  .jar { font-size: 0.9rem; }
-  .menu-btn { background: none; color: var(--cream); font-size: 1.2rem; padding: 0 0.3rem; min-height: 0; }
   .chips { display: flex; gap: 0.4rem; }
   .chip {
     background: var(--accent); color: var(--ink);
@@ -855,7 +897,6 @@
     font-size: 0.8rem; font-weight: bold;
     animation: op-slide-up 0.2s ease-out;
   }
-  .flame { color: var(--accent); font-weight: bold; animation: op-pop 0.3s ease-out; }
   .queue { display: flex; gap: 0.75rem; min-height: 40px; }
   .customer { width: 64px; opacity: 0.5; }
   .customer.active { opacity: 1; }
@@ -866,10 +907,11 @@
   .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
   .flash {
-    position: fixed; inset: 16% 0 auto 0; margin: 0 auto; width: fit-content;
+    position: fixed; inset: 7% 0 auto 0; margin: 0 auto; width: fit-content;
     background: var(--cream); color: var(--ink);
     padding: 0.75rem 1.5rem; border-radius: var(--radius);
-    font-size: 1.3rem; font-weight: bold;
+    font-size: 1.15rem; font-weight: bold;
   }
+  .err-flash { inset: 14% 0 auto 0; background: var(--danger); color: var(--cream); font-size: 1rem; }
   .badge-toast { inset: auto 0 12% 0; background: var(--accent); }
 </style>

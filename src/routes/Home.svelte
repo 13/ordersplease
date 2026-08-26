@@ -4,10 +4,13 @@
   import { keynav } from '../lib/keynav';
   import { daily } from '../stores/daily';
   import { dailyKey } from '../core/daily';
+  import { weekly } from '../stores/weekly';
+  import { weekKey } from '../core/weekly';
   import { progress, unlockedLevel } from '../stores/progress';
   import { seen } from '../stores/seen';
 
   const doneToday = $derived($daily?.date === dailyKey(new Date()));
+  const doneThisWeek = $derived($weekly?.week === weekKey(new Date()));
   const level = $derived(unlockedLevel($progress));
   const suggestTutorial = $derived(level === 1 && !$seen.includes('tutorial'));
 </script>
@@ -21,7 +24,7 @@
     <span>{suggestTutorial ? $t('home.tutorial-sub') : $t('home.continue').replace('{n}', String(level))}</span>
   </button>
 
-  <div class="tiles" style="--keynav-cols: 3">
+  <div class="tiles" style="--keynav-cols: 2">
     <button onclick={() => go('rush')}>
       🌙<strong>{$t('home.rush')}</strong><span>{$t('home.rush-sub')}</span>
     </button>
@@ -30,6 +33,9 @@
     </button>
     <button onclick={() => go('practice')}>
       🎯<strong>{$t('home.practice')}</strong><span>{$t('home.practice-sub')}</span>
+    </button>
+    <button onclick={() => go('weekly')}>
+      🗓<strong>{$t('home.weekly')}{doneThisWeek ? ' ✓' : ''}</strong><span>{$t('home.weekly-sub')}</span>
     </button>
   </div>
 
@@ -56,7 +62,7 @@
     font-size: 1.2rem; padding: var(--space-4); box-shadow: var(--shadow);
   }
   .play span { font-size: 0.85rem; opacity: 0.8; }
-  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+  .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
   .tiles button {
     display: flex; flex-direction: column; gap: var(--space-1); align-items: center;
     background: var(--wood-light); color: var(--cream);

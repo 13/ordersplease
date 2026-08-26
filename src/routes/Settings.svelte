@@ -8,6 +8,8 @@
   import { history } from '../stores/history';
   import { DEFAULT_MENU } from '../core/menu';
 
+  if ($settings.volume === undefined) settings.update((s) => ({ ...s, volume: 1, haptics: s.haptics ?? true, amountEntry: s.amountEntry ?? false }));
+
   function resetAll() {
     if (!confirm($t('settings.reset-confirm'))) return;
     progress.set({ stars: {} });
@@ -30,6 +32,13 @@
   <label><input type="checkbox" bind:checked={$settings.sound} /> {$t('settings.sound')}</label>
   <label><input type="checkbox" bind:checked={$settings.symbolFirst} /> {$t('settings.symbol-first')}</label>
   <label><input type="checkbox" bind:checked={$settings.alwaysShowPrices} /> {$t('settings.show-prices')}</label>
+  <label><input type="checkbox" bind:checked={$settings.amountEntry} /> {$t('settings.amount-entry')}</label>
+  <label><input type="checkbox" bind:checked={$settings.haptics} /> {$t('settings.haptics-label')}</label>
+  {#if $settings.sound}
+    <label class="vol">{$t('settings.volume')}
+      <input type="range" min="0" max="1" step="0.1" bind:value={$settings.volume} />
+    </label>
+  {/if}
 
   <button class="replay" onclick={() => go('tutorial')}>{$t('settings.replay-tutorial')}</button>
   <button class="danger" onclick={resetAll}>{$t('settings.reset')}</button>
@@ -42,6 +51,7 @@
   label { display: flex; align-items: center; gap: 0.6rem; }
   select { font: inherit; padding: 0.4rem; border-radius: var(--radius); }
   input[type='checkbox'] { width: 24px; height: 24px; }
+  .vol input { flex: 1; }
   .replay { background: var(--wood-light); color: var(--cream); }
   .danger { background: var(--danger); color: var(--cream); margin-top: 1.5rem; }
 </style>

@@ -24,6 +24,7 @@
   let askOpen = $state(false);
   let coach = $state('');
   let finished = $state(false);
+  let asked = $state(false);
 
   const tillView = $derived.by(() => {
     if (!round) return tutorialTill(step);
@@ -51,6 +52,7 @@
     );
     pile = [];
     askOpen = false;
+    asked = false;
     coach = get(t)(`tutorial.s${i + 1}.sum`);
   }
 
@@ -73,6 +75,12 @@
 
   function confirm() {
     if (!round) return;
+    if (TUTORIAL_STEPS[step].needsAsk && !asked) {
+      errorBuzz($settings.sound);
+      coach = get(t)('tutorial.need-ask');
+      pile = [];
+      return;
+    }
     if (piecesTotal(pile) !== round.changeDue) {
       errorBuzz($settings.sound);
       coach = get(t)('tutorial.wrong-change').replace(
@@ -100,6 +108,7 @@
       return;
     }
     round = askCustomer(round, d);
+    asked = true;
     coach = get(t)('tutorial.s3.after-ask');
   }
 

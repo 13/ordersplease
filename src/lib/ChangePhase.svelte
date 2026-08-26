@@ -10,14 +10,14 @@
   let {
     paymentPieces, tillView, pile, showPileTotal, showKeys, finishMode, askOpen,
     ontake, onreturn, onconfirm, ontoggleask, onask, onnotenough, ontipp, tippHint = '',
-    showExtras = true, typedDisplay = '',
+    showExtras = true, typedDisplay = '', typedHint = '',
   }: {
     paymentPieces: Denom[]; tillView: Till; pile: Denom[];
     showPileTotal: boolean; showKeys: boolean; finishMode: boolean; askOpen: boolean;
     ontake: (d: Denom) => void; onreturn: (index: number) => void;
     onconfirm: () => void; ontoggleask: () => void; onask: (d: Denom) => void;
     onnotenough: () => void; ontipp: () => void; tippHint?: string; showExtras?: boolean;
-    typedDisplay?: string;
+    typedDisplay?: string; typedHint?: string;
   } = $props();
 </script>
 
@@ -39,7 +39,7 @@
   </div>
 {/if}
 {#if typedDisplay !== ''}
-  <div class="typed">⌨ {typedDisplay} <small>{$t('game.typed-hint')}</small></div>
+  <div class="typed">⌨ {typedDisplay} <small>{typedHint}</small></div>
 {/if}
 <div class="actions">
   <button class="confirm" onclick={onconfirm}>

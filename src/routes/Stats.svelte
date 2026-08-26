@@ -38,6 +38,21 @@
   });
   const maxRounds = $derived(Math.max(1, ...days.map((x) => x.entry?.rounds ?? 0)));
   const hasHistory = $derived(days.some((x) => x.entry));
+  const accSegments = $derived.by(() => {
+    const segs: string[] = [];
+    let current: string[] = [];
+    days.forEach(({ entry }, i) => {
+      if (entry && entry.rounds > 0) {
+        const acc = entry.correct / entry.rounds;
+        current.push(`${i * 20 + 10},${70 - acc * 60}`);
+      } else if (current.length) {
+        segs.push(current.join(' '));
+        current = [];
+      }
+    });
+    if (current.length) segs.push(current.join(' '));
+    return segs.filter((s) => s.includes(' ')); // only segments with ≥2 points
+  });
 </script>
 
 <main class="stats">
@@ -62,6 +77,9 @@
           <circle cx={i * 20 + 10} cy={70 - acc * 60} r="2.5" class="dot" />
         {/if}
         <text x={i * 20 + 10} y="80" class="lbl">{key.slice(8)}</text>
+      {/each}
+      {#each accSegments as pts (pts)}
+        <polyline points={pts} class="acc-line" />
       {/each}
     </svg>
   {/if}
@@ -123,4 +141,5 @@
   .bar-r { fill: var(--accent); opacity: 0.55; }
   .dot { fill: var(--cream); }
   .lbl { fill: var(--cream); opacity: 0.6; font-size: 6px; text-anchor: middle; }
+  .acc-line { fill: none; stroke: var(--cream); stroke-width: 1.5; opacity: 0.8; }
 </style>

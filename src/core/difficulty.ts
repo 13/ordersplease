@@ -22,7 +22,7 @@ export interface DifficultyParams {
   rowdyProb: number;
 }
 
-export const MAX_LEVEL = 30;
+export const MAX_LEVEL = 40;
 
 interface Anchor extends DifficultyParams { level: number; }
 
@@ -52,6 +52,11 @@ const ANCHORS: Anchor[] = [
     showPileTotal: false, ordersPerLevel: 12,
     underpayProb: 0.25, disputeProb: 0.25, tabProb: 0.3, splitProb: 0.25,
     happyHourProb: 0.5, rowdyProb: 0.15 },
+  { level: 40, itemsMin: 6, itemsMax: 8, priceStyle: 'any',  paymentStyle: 'awkward',
+    patienceSeconds: 10, menuVisibleSeconds: 0,    scarceDenoms: 5, midOrderChangeProb: 0.45,
+    showPileTotal: false, ordersPerLevel: 14,
+    underpayProb: 0.3, disputeProb: 0.3, tabProb: 0.35, splitProb: 0.3,
+    happyHourProb: 0.6, rowdyProb: 0.2 },
 ];
 
 function lerp(a: number, b: number, t: number): number {

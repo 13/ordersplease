@@ -213,6 +213,24 @@ describe('hint kills the first-try bonus', () => {
   });
 });
 
+describe('weekly mode', () => {
+  it('ramps params per round like daily but toward level 30', () => {
+    let s = createSession('weekly', 1, DEFAULT_MENU, false, 42, {
+      ...paramsForLevel(5), ordersPerLevel: 20,
+    });
+    for (let i = 0; i < 19; i++) {
+      const round = createRound(
+        { lines: [{ item: DEFAULT_MENU[0], qty: 1 }], totalCents: DEFAULT_MENU[0].priceCents },
+        [5000], s.till,
+      );
+      const done = { ...round, phase: 'done' as const, success: true as const };
+      s = completeRound(s, done, { orderText: '', ms: 1000 });
+    }
+    expect(s.finished).toBe(null); // 19 of 20 done
+    expect(s.params.patienceSeconds).toBeLessThanOrEqual(paramsForLevel(30).patienceSeconds + 2);
+  });
+});
+
 describe('happy hour session roll', () => {
   it('is deterministic for a fixed seed', () => {
     const mk = () => createSession('level', 20, DEFAULT_MENU, false, 12345);
