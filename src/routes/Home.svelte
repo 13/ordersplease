@@ -44,6 +44,7 @@
     <button class="minor" onclick={() => go('stats')}>{$t('home.stats')}</button>
     <button class="minor" onclick={() => go('menu')}>{$t('home.menu')}</button>
     <button class="minor" onclick={() => go('settings')}>{$t('home.settings')}</button>
+    <button class="minor" onclick={() => go('bar')}>{$t('bar.title')}</button>
   </div>
 </main>
 
@@ -70,7 +71,7 @@
   }
   .tiles strong { font-size: 0.9rem; }
   .tiles span { font-size: 0.7rem; opacity: 0.7; }
-  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: var(--space-2); }
   .row .minor {
     min-width: 0; min-height: 52px; background: none; color: var(--cream);
     border: 1px solid var(--wood-light); border-radius: 10px; font-size: 0.78rem;

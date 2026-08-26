@@ -40,7 +40,9 @@
   import { tipFor, tipEligible } from '../core/tips';
   import { history, recordDayEntry, pruneHistory, localDayKey } from '../stores/history';
   import { weeklyHistory } from '../stores/weekly-history';
-  import { careerTitle } from '../core/career';
+  import { careerTitle, applyUpgrades, boostTip, freeFirstHint } from '../core/career';
+  import { career } from '../stores/career';
+  import type { DifficultyParams } from '../core/difficulty';
   import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
   import { focusFirst } from '../lib/focus';
@@ -80,11 +82,13 @@
       : Date.now() % 2 ** 31;
     rankedRun = mode === 'daily' ? isRanked(get(daily), new Date()) : false;
     const isDaily = mode === 'daily' || mode === 'weekly';
+    const upgraded = (p: DifficultyParams) => applyUpgrades(p, get(career).upgrades, mode);
     return createSession(
       mode, level,
       isDaily ? localizedDefaultMenu(get(settings).locale) : get(activeMenu),
       isDaily ? false : get(settings).useCustomMenu,
-      seed, override,
+      seed,
+      override ? upgraded(override) : mode === 'level' ? upgraded(paramsForLevel(level)) : undefined,
     );
   }
   let session = $state(newSession());
@@ -134,6 +138,7 @@
   let rowdy = $state(false);
   let tipJar = $state(0);
   let tipsEarnedSession = 0;
+  let hintsUsedSession = 0;
 
   const symbolFirst = $derived($settings.symbolFirst);
   const tillView = $derived.by(() => {
@@ -336,10 +341,11 @@
     }
     rowdy = false;
     if (earnsTip) {
-      const tip = tipFor(groupTotal);
+      const tip = boostTip(tipFor(groupTotal), get(career).upgrades, mode);
       tipJar += tip;
       tipsEarnedSession += tip;
       stats.update((s) => recordTips(s, tip));
+      career.update((c) => ({ ...c, walletCents: c.walletCents + tip }));
     }
     if (hintDebt > 0) {
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
@@ -451,7 +457,11 @@
     round = markHint(round);
     hintText = hintFor(round, hintIndex, $settings.locale);
     hintIndex += 1;
-    if (tipJar >= 50) tipJar -= 50;
+    const free = hintsUsedSession === 0 && freeFirstHint(get(career).upgrades, mode);
+    hintsUsedSession += 1;
+    if (free) {
+      // first hint of the shift: no jar deduction, no debt
+    } else if (tipJar >= 50) tipJar -= 50;
     else hintDebt += 25;
   }
 
@@ -555,6 +565,7 @@
     rowdy = false;
     tipJar = 0;
     tipsEarnedSession = 0;
+    hintsUsedSession = 0;
     startRound();
   }
 

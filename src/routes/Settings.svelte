@@ -8,6 +8,7 @@
   import { menuProfiles, activeProfileId } from '../stores/menu';
   import { history } from '../stores/history';
   import { DEFAULT_MENU } from '../core/menu';
+  import { career } from '../stores/career';
 
   if ($settings.volume === undefined) settings.update((s) => ({ ...s, volume: 1, haptics: s.haptics ?? true, amountEntry: s.amountEntry ?? false }));
 
@@ -19,6 +20,8 @@
     menuProfiles.set([{ id: 'my-menu', name, items: DEFAULT_MENU.map((m) => ({ ...m })) }]);
     activeProfileId.set('my-menu');
     history.set({});
+    career.set({ walletCents: 0, upgrades: [] });
+    settings.update((s) => ({ ...s, accent: 'default' }));
   }
 </script>
 
