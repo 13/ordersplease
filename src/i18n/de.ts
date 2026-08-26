@@ -198,4 +198,7 @@ export default {
   'tutorial.done-title': 'Bereit für die erste Schicht!',
   'tutorial.done-body': 'Du kannst Bestellungen addieren, Rückgeld geben und mit Münzmangel umgehen. In der echten Bar gibt es dazu Zeitdruck, Trinkgeld und kniffligere Gäste.',
   'tutorial.done-cta': 'Level 1 starten',
+  'update.available': 'Update verfügbar',
+  'update.reload': 'Neu laden',
+  'update.dismiss': 'Schließen',
 } as Record<string, string>;

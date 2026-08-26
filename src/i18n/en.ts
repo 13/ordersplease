@@ -198,4 +198,7 @@ export default {
   'tutorial.done-title': 'Ready for your first shift!',
   'tutorial.done-body': 'You can sum orders, give change, and handle a coin shortage. The real bar also has timers, tips and trickier customers.',
   'tutorial.done-cta': 'Start level 1',
+  'update.available': 'Update available',
+  'update.reload': 'Reload',
+  'update.dismiss': 'Dismiss',
 } as Record<string, string>;
