@@ -53,6 +53,7 @@
   import { canMakeChange, makeChange } from '../core/change';
   import { markSeen } from '../stores/seen';
   import EndOverlay from '../lib/EndOverlay.svelte';
+  import GameToasts from '../lib/GameToasts.svelte';
   import CoinBurst from '../lib/CoinBurst.svelte';
   import DisputeDialog from '../lib/DisputeDialog.svelte';
   import PauseOverlay from '../lib/PauseOverlay.svelte';
@@ -378,6 +379,8 @@
     waveT.clear();
     menuT.clear();
     flashT.clear();
+    errorFlash = null;
+    errT.clear();
     flashT.start(() => {
       flash = null;
       startRound();
@@ -881,8 +884,7 @@
 
   <CoinBurst {burstKey} />
 
-  {#if flash}<div class="flash">{flash}</div>{/if}
-  {#if errorFlash}<div class="flash err-flash">{errorFlash}</div>{/if}
+  <GameToasts {flash} {errorFlash} />
 
   {#if session.finished && finalized}
     <EndOverlay
@@ -944,21 +946,17 @@
   .customer.active { opacity: 1; }
   .face { font-size: 1.4rem; }
   .order { font-size: 1.15rem; font-style: italic; }
-  .flash { animation: op-slide-up 0.2s ease-out; }
   .amend { color: var(--accent); animation: op-slide-up 0.3s ease-out; }
   .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
-  .flash {
-    position: fixed; inset: 20% 0 auto 0; margin: 0 auto; width: fit-content;
-    background: linear-gradient(180deg, var(--cream), var(--cream-2));
-    color: var(--ink);
+  .badge-toast {
+    position: fixed; inset: auto 0 12% 0; margin: 0 auto; width: fit-content;
+    background: var(--accent); color: var(--ink); animation: op-slide-up 0.2s ease-out;
     padding: 0.75rem 1.5rem; border-radius: 14px;
     font-size: 1.15rem; font-weight: bold;
     box-shadow: 0 8px 24px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.6);
     border: 1px solid rgb(0 0 0 / 0.15);
   }
-  .err-flash { inset: 28% 0 auto 0; background: var(--danger); color: var(--cream); font-size: 1rem; }
-  .badge-toast { inset: auto 0 12% 0; background: var(--accent); }
   .orders-bar {
     height: 6px; border-radius: 3px; background: rgb(0 0 0 / 0.35); overflow: hidden;
   }

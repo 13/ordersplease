@@ -140,8 +140,10 @@
         {#if entry}
           {@const h = (entry.rounds / maxRounds) * 60}
           <rect x={i * 20 + 3} y={70 - h} width="14" height={h} rx="2" class="bar-r" />
-          {@const acc = entry.rounds > 0 ? entry.correct / entry.rounds : 0}
-          <circle cx={i * 20 + 10} cy={70 - acc * 60} r="2.5" class="dot" />
+          {#if entry.rounds > 0}
+            {@const acc = entry.correct / entry.rounds}
+            <circle cx={i * 20 + 10} cy={70 - acc * 60} r="2.5" class="dot" />
+          {/if}
         {/if}
         <text x={i * 20 + 10} y="80" class="lbl">{key.slice(8)}</text>
       {/each}

@@ -10,8 +10,6 @@
   import { DEFAULT_MENU } from '../core/menu';
   import { career } from '../stores/career';
 
-  if ($settings.volume === undefined) settings.update((s) => ({ ...s, volume: 1, haptics: s.haptics ?? true, amountEntry: s.amountEntry ?? false }));
-
   function resetAll() {
     if (!confirm($t('settings.reset-confirm'))) return;
     progress.set({ stars: {} });

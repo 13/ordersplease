@@ -73,40 +73,42 @@
       {/each}
     </div>
   {/if}
-  <h2>{session.finished === 'won' ? $t('result.won') : $t('result.lost')}</h2>
-  {#if levelName && session.finished === 'won'}<p class="lvlname">{levelName}</p>{/if}
-  {#if session.mode === 'level' && session.finished === 'won'}
-    <p class="stars">
-      {#each [0, 1, 2] as i (i)}
-        <span class="star" class:earned={i < stars} style="animation-delay: {i * 0.25}s">
-          {i < stars ? '★' : '☆'}
-        </span>
-      {/each}
-    </p>
-  {/if}
-  <p>{$t('game.score')}: {displayScore}</p>
-  {#if showAccuracy}
-    <p>{$t('result.accuracy')}: {served}/{fullRounds.length}</p>
-  {/if}
-  {#if note}<p class="note">{note}</p>{/if}
-  {#if session.mode === 'rush' && wasNewHigh}
-    <p>{$t('result.highscore')}</p>
-  {/if}
+  <div class="panel">
+    <h2>{session.finished === 'won' ? $t('result.won') : $t('result.lost')}</h2>
+    {#if levelName && session.finished === 'won'}<p class="lvlname">{levelName}</p>{/if}
+    {#if session.mode === 'level' && session.finished === 'won'}
+      <p class="stars">
+        {#each [0, 1, 2] as i (i)}
+          <span class="star" class:earned={i < stars} style="animation-delay: {i * 0.25}s">
+            {i < stars ? '★' : '☆'}
+          </span>
+        {/each}
+      </p>
+    {/if}
+    <p>{$t('game.score')}: {displayScore}</p>
+    {#if showAccuracy}
+      <p>{$t('result.accuracy')}: {served}/{fullRounds.length}</p>
+    {/if}
+    {#if note}<p class="note">{note}</p>{/if}
+    {#if session.mode === 'rush' && wasNewHigh}
+      <p>{$t('result.highscore')}</p>
+    {/if}
 
-  <RoundDetails log={fullRounds} />
+    <RoundDetails log={fullRounds} />
 
-  <div class="overlay-actions" use:keynav bind:this={actionsEl}>
-    {#if onshare}
-      <button onclick={onshare}>{shareLabel}</button>
-    {/if}
-    {#if compareCode}
-      <button class="code" onclick={copyCode}>{codeCopied ? $t('daily.copied') : compareCode}</button>
-    {/if}
-    {#if session.mode === 'level' && session.finished === 'won' && level < MAX_LEVEL}
-      <button onclick={() => go(`game/${level + 1}`)}>{$t('result.next')}</button>
-    {/if}
-    <button onclick={onretry}>{$t('result.retry')}</button>
-    <button onclick={() => go('home')}>{$t('result.home')}</button>
+    <div class="overlay-actions" use:keynav bind:this={actionsEl}>
+      {#if onshare}
+        <button onclick={onshare}>{shareLabel}</button>
+      {/if}
+      {#if compareCode}
+        <button class="code" onclick={copyCode}>{codeCopied ? $t('daily.copied') : compareCode}</button>
+      {/if}
+      {#if session.mode === 'level' && session.finished === 'won' && level < MAX_LEVEL}
+        <button onclick={() => go(`game/${level + 1}`)}>{$t('result.next')}</button>
+      {/if}
+      <button onclick={onretry}>{$t('result.retry')}</button>
+      <button onclick={() => go('home')}>{$t('result.home')}</button>
+    </div>
   </div>
 </div>
 
@@ -114,9 +116,12 @@
   .overlay {
     position: fixed; inset: 0; background: rgb(0 0 0 / 0.65);
     backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; justify-content: safe center;
-    gap: 0.75rem; text-align: center; padding: 1rem;
-    overflow-y: auto;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 1rem; overflow-y: auto;
+  }
+  .panel {
+    margin: auto 0; display: flex; flex-direction: column; align-items: center;
+    gap: 0.75rem; text-align: center;
   }
   .shower { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .drop {
