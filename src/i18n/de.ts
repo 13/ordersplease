@@ -126,6 +126,8 @@ export default {
   'menu.export': 'Exportieren',
   'menu.import': 'Importieren',
   'menu.import-error': 'Diese Datei ist keine gültige Speisekarte.',
+  'menu.confirm-edit': 'Änderungen speichern',
+  'menu.cancel-edit': 'Bearbeiten abbrechen',
   'error.name-empty': 'Name darf nicht leer sein',
   'error.price-invalid': 'Preis muss ein positives Vielfaches von 10 Cent sein',
   'settings.title': 'Einstellungen',

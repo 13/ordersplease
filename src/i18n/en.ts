@@ -126,6 +126,8 @@ export default {
   'menu.export': 'Export',
   'menu.import': 'Import',
   'menu.import-error': 'That file is not a valid menu.',
+  'menu.confirm-edit': 'Save changes',
+  'menu.cancel-edit': 'Cancel editing',
   'error.name-empty': 'Name must not be empty',
   'error.price-invalid': 'Price must be a positive multiple of 10 cents',
   'settings.title': 'Settings',

@@ -15,6 +15,10 @@
   let newProfileName = $state('');
   let importError = $state<string | null>(null);
   let fileInput = $state<HTMLInputElement | null>(null);
+  let editingId = $state<string | null>(null);
+  let editName = $state('');
+  let editPrice = $state('');
+  let editError = $state<string | null>(null);
 
   function updateActive(fn: (items: import('../core/menu').MenuItem[]) => import('../core/menu').MenuItem[]) {
     menuProfiles.update((profiles) => profiles.map((p) =>
@@ -38,7 +42,38 @@
   }
 
   function remove(id: string) {
+    if (editingId === id) editingId = null;
     updateActive((items) => items.filter((x) => x.id !== id));
+  }
+
+  function startEdit(item: import('../core/menu').MenuItem) {
+    editingId = item.id;
+    editName = item.name;
+    editPrice = formatEuro(item.priceCents, false).replace(/[^\d,]/g, '');
+    editError = null;
+  }
+
+  function cancelEdit() {
+    editingId = null;
+    editError = null;
+  }
+
+  function commitEdit(id: string) {
+    const cents = parseEuro(editPrice);
+    const err = validateItem(editName, cents ?? -1);
+    if (err) {
+      editError = err;
+      return;
+    }
+    updateActive((items) => items.map((x) =>
+      x.id === id ? { ...x, name: editName.trim(), priceCents: cents! } : x));
+    editingId = null;
+    editError = null;
+  }
+
+  function onEditKey(e: KeyboardEvent, id: string) {
+    if (e.key === 'Enter') { e.preventDefault(); commitEdit(id); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelEdit(); }
   }
 
   function toggleCategory(id: string) {
@@ -170,18 +205,36 @@
 
   <ul>
     {#each $activeProfile?.items ?? [] as item (item.id)}
-      <li>
-        <span>{item.name}</span>
-        <span class="price">{formatEuro(item.priceCents, $settings.symbolFirst)}</span>
-        <button
-          class="cat"
-          onclick={() => toggleCategory(item.id)}
-          aria-label={item.category === 'food' ? $t('menu.cat-food') : $t('menu.cat-drink')}
-        >
-          {item.category === 'food' ? '🍽' : '🍺'}
-        </button>
-        <button class="del" onclick={() => remove(item.id)} aria-label={$t('menu.delete-item')}>✕</button>
-      </li>
+      {#if editingId === item.id}
+        <li class="editing">
+          <input
+            class="edit-name" bind:value={editName}
+            onkeydown={(e) => onEditKey(e, item.id)}
+          />
+          <input
+            class="edit-price" inputmode="decimal" bind:value={editPrice}
+            onkeydown={(e) => onEditKey(e, item.id)}
+          />
+          <button class="ok" onclick={() => commitEdit(item.id)} aria-label={$t('menu.confirm-edit')}>✓</button>
+          <button class="cancel" onclick={cancelEdit} aria-label={$t('menu.cancel-edit')}>✕</button>
+          {#if editError}<p class="error edit-error">{$t(editError)}</p>{/if}
+        </li>
+      {:else}
+        <li>
+          <button class="entry" onclick={() => startEdit(item)}>
+            <span class="name">{item.name}</span>
+            <span class="price">{formatEuro(item.priceCents, $settings.symbolFirst)}</span>
+          </button>
+          <button
+            class="cat"
+            onclick={() => toggleCategory(item.id)}
+            aria-label={item.category === 'food' ? $t('menu.cat-food') : $t('menu.cat-drink')}
+          >
+            {item.category === 'food' ? '🍽' : '🍺'}
+          </button>
+          <button class="del" onclick={() => remove(item.id)} aria-label={$t('menu.delete-item')}>✕</button>
+        </li>
+      {/if}
     {/each}
   </ul>
 
@@ -240,6 +293,22 @@
   .price { font-variant-numeric: tabular-nums; }
   .del { background: var(--danger); color: var(--cream); min-width: 40px; min-height: 40px; }
   .cat { background: var(--wood-light); min-width: 44px; min-height: 40px; }
+  .entry {
+    flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+    background: none; color: var(--cream); text-align: left; min-height: 40px; padding: 0.2rem 0.3rem;
+  }
+  .entry .name { flex: 1; overflow-wrap: anywhere; }
+  .entry:hover, .entry:focus-visible { background: rgb(255 255 255 / 0.08); border-radius: var(--radius); }
+  li.editing { flex-wrap: wrap; }
+  .edit-name, .edit-price {
+    padding: 0.5rem; border-radius: var(--radius); border: none; font: inherit;
+    background: var(--cream); color: var(--ink);
+  }
+  .edit-name { flex: 1; min-width: 0; }
+  .edit-price { width: 5.5rem; }
+  .ok { background: var(--ok); color: var(--cream); min-width: 40px; min-height: 40px; }
+  .cancel { background: var(--danger); color: var(--cream); min-width: 40px; min-height: 40px; }
+  .edit-error { flex-basis: 100%; margin: 0; }
   .add { display: flex; gap: 0.4rem; }
   .add input {
     flex: 1; min-width: 0; padding: 0.6rem; border-radius: var(--radius);
