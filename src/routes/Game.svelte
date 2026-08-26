@@ -18,7 +18,7 @@
     dailySeed, dailyLevelFor, DAILY_ORDERS, isRanked, nextDailyRecord, shareText,
   } from '../core/daily';
   import { daily } from '../stores/daily';
-  import { weeklySeed, weeklyLevelFor, WEEKLY_ORDERS, nextWeeklyRecord, weeklyShareText } from '../core/weekly';
+  import { weeklySeed, weeklyLevelFor, WEEKLY_ORDERS, nextWeeklyRecord, weeklyShareText, weekKey } from '../core/weekly';
   import { weekly } from '../stores/weekly';
   import { badges } from '../stores/badges';
   import {
@@ -39,6 +39,8 @@
   import { happyHourActive, discountMenu } from '../core/happy-hour';
   import { tipFor, tipEligible } from '../core/tips';
   import { history, recordDayEntry, pruneHistory, localDayKey } from '../stores/history';
+  import { weeklyHistory } from '../stores/weekly-history';
+  import { careerTitle } from '../core/career';
   import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
   import { focusFirst } from '../lib/focus';
@@ -581,6 +583,9 @@
     }
     if (session.mode === 'weekly') {
       weekly.update((prev) => nextWeeklyRecord(prev, new Date(), session.score));
+      // Update weekly history to track which weeks have been played
+      const week = weekKey(new Date());
+      weeklyHistory.update((h) => ({ ...h, [week]: 1 }));
     }
     bigWin = (session.mode === 'level' && session.finished === 'won' && stars === 3)
       || (session.mode === 'rush' && wasNewHigh)
@@ -588,11 +593,27 @@
           && fullRounds.length >= DAILY_ORDERS && fullRounds.every((e) => e.success));
     if (bigWin) fanfare($settings.sound);
 
+    // Calculate career progress for badge checking
+    const progressData = get(progress);
+    const threeStarLevels = Object.values(progressData.stars).filter((s) => s === 3).length;
+    const totalStars = Object.values(progressData.stars).reduce((a, b) => a + b, 0);
+    const maxLevelWon = Object.keys(progressData.stars).length > 0 ? Math.max(...Object.keys(progressData.stars).map(Number)) : 0;
+    const statsData = get(stats);
+    const titleRankValue = careerTitle(totalStars, maxLevelWon);
+    const titleRankMap: Record<string, number> = { aushilfe: 0, barkeeper: 1, schichtleiter: 2, wirt: 3, legende: 4 };
+    const titleRank = titleRankMap[titleRankValue];
+    const weeklyWeeks = Object.keys(get(weeklyHistory)).length;
+
     const got = newBadges({
       mode: session.mode, finished: session.finished, stars, level,
       maxStreak, trapCaught, disputeWon, tabServed, splitServed,
       elapsedMs: session.elapsedMs,
       dailyStreak: get(daily)?.streak ?? 0,
+      weeklyWeeks,
+      lifetimeTips: Math.floor((statsData.tipsEarnedCents ?? 0) / 100),
+      lifetimeRounds: statsData.rounds,
+      threeStarLevels,
+      titleRank,
     }, get(badges));
     if (got.length > 0) {
       badges.update((b) => [...b, ...got]);
