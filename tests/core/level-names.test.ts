@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
+import { MAX_LEVEL } from '../../src/core/difficulty';
 import en from '../../src/i18n/en';
 import de from '../../src/i18n/de';
 
 describe('level names', () => {
-  it('all 30 names exist in both dictionaries', () => {
-    for (let l = 1; l <= 30; l++) {
+  it(`all ${MAX_LEVEL} names exist in both dictionaries`, () => {
+    for (let l = 1; l <= MAX_LEVEL; l++) {
       expect(en[`level.name.${l}`], `en ${l}`).toBeTruthy();
       expect(de[`level.name.${l}`], `de ${l}`).toBeTruthy();
     }

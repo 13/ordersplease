@@ -16,7 +16,7 @@ describe('difficulty', () => {
     expect(p.ordersPerLevel).toBe(6);
   });
   it('level 30 matches spec anchors', () => {
-    const p = paramsForLevel(MAX_LEVEL);
+    const p = paramsForLevel(30);
     expect(p.itemsMax).toBe(7);
     expect(p.priceStyle).toBe('any');
     expect(p.paymentStyle).toBe('awkward');
@@ -124,5 +124,32 @@ describe('round-6 mechanic params', () => {
       expect(practiceParams(s).happyHourProb).toBe(0);
       expect(practiceParams(s).rowdyProb).toBe(0);
     }
+  });
+});
+
+describe('levels 31-40', () => {
+  it('MAX_LEVEL is 40 and L40 hits the new anchor', () => {
+    expect(MAX_LEVEL).toBe(40);
+    const p = paramsForLevel(40);
+    expect(p.itemsMin).toBe(6);
+    expect(p.itemsMax).toBe(8);
+    expect(p.patienceSeconds).toBe(10);
+    expect(p.ordersPerLevel).toBe(14);
+    expect(p.scarceDenoms).toBe(5);
+    expect(p.underpayProb).toBeCloseTo(0.3);
+    expect(p.disputeProb).toBeCloseTo(0.3);
+    expect(p.tabProb).toBeCloseTo(0.35);
+    expect(p.splitProb).toBeCloseTo(0.3);
+    expect(p.happyHourProb).toBeCloseTo(0.6);
+    expect(p.rowdyProb).toBeCloseTo(0.2);
+  });
+  it('L30 is unchanged and 30→40 interpolates', () => {
+    const p30 = paramsForLevel(30);
+    expect(p30.ordersPerLevel).toBe(12);
+    expect(p30.patienceSeconds).toBe(12);
+    const p35 = paramsForLevel(35);
+    expect(p35.ordersPerLevel).toBe(13);
+    expect(p35.patienceSeconds).toBe(11);
+    expect(p35.underpayProb).toBeCloseTo(0.275);
   });
 });
