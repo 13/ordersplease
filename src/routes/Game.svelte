@@ -519,6 +519,7 @@
     session = newSession();
     round = null;
     flash = null;
+    errorFlash = null;
     dispute = null;
     disputeVerdict = null;
     finalized = false;
