@@ -40,7 +40,26 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'node',
+          environment: 'node',
+          include: ['tests/**/*.test.ts'],
+          exclude: ['tests/components/**'],
+        },
+      },
+      {
+        extends: true,
+        resolve: { conditions: ['browser'] },
+        test: {
+          name: 'jsdom',
+          environment: 'jsdom',
+          include: ['tests/components/**/*.test.ts'],
+          setupFiles: ['@testing-library/svelte/vitest'],
+        },
+      },
+    ],
   },
 });
