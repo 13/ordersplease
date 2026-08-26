@@ -37,7 +37,7 @@
   import { happyHourActive, discountMenu } from '../core/happy-hour';
   import { tipFor, tipEligible } from '../core/tips';
   import { history, recordDayEntry, pruneHistory, localDayKey } from '../stores/history';
-  import { COIN_DENOMS, type Denom } from '../core/till';
+  import { COIN_DENOMS, DENOMS, type Denom } from '../core/till';
   import { denomLabel } from '../lib/denom-view';
   import { focusFirst } from '../lib/focus';
   import { chaChing, coinClink, errorBuzz, fanfare, tickTock } from '../lib/sound';
@@ -86,6 +86,7 @@
   let askOpen = $state(false);
   let typedChange = $state('');
   let flash = $state<string | null>(null);
+  let errorFlash = $state<string | null>(null);
   let heartPulse = $state(false);
   let dispute = $state<Dispute | null>(null);
   let disputeOpts = $state<number[]>([]);           // fixed at dialog-open time; never roll rng in markup
@@ -98,6 +99,7 @@
   const amendT = new PausableTimer();
   const menuT = new PausableTimer();
   const flashT = new PausableTimer();
+  const errT = new PausableTimer();
   const waveT = new PausableTimer();
   let paused = $state(false);
   let pauseMenu = $state(false);
@@ -369,11 +371,14 @@
       else if (round.changeDue > 0 && !canMakeChange(round.till, round.changeDue)) maybeExplain('shortage');
     }
     if (round.phase === 'done') finishRound();
-    else if (round.sumTries > 0 && round.phase === 'sum') errorBuzz($settings.sound);
+    else if (round.sumTries > 0 && round.phase === 'sum') {
+      errorBuzz($settings.sound);
+      showError('err.sum');
+    }
   }
 
   function take(d: Denom) {
-    typedChange = '';
+    if (get(settings).amountEntry) typedChange = '';
     if ((tillView[d] ?? 0) > 0) {
       pile = [...pile, d];
       coinClink($settings.sound);
@@ -401,6 +406,7 @@
     } else {
       pile = [];
       errorBuzz($settings.sound);
+      showError('err.change');
     }
   }
   function onAsk(d: Denom) {
@@ -436,7 +442,7 @@
   }
 
   function typeChange(d: string) {
-    if (typedChange === '') pile = []; // typing replaces the clicked pile
+    if (typedChange === '' && get(settings).amountEntry) pile = []; // typing replaces the clicked pile
     if (d === ',') {
       if (typedChange.includes(',')) return;
       typedChange = typedChange === '' ? '0,' : typedChange + ',';
@@ -457,6 +463,19 @@
     }
     const amount = parseEntry(typedChange);
     typedChange = '';
+    if (!get(settings).amountEntry) {
+      // pieces mode: the entry names one denomination
+      const d = amount as Denom;
+      if (!(DENOMS as readonly number[]).includes(d) || (tillView[d] ?? 0) <= 0) {
+        errorBuzz($settings.sound);
+        showError('err.denom');
+        return;
+      }
+      pile = [...pile, d];
+      coinClink($settings.sound);
+      return;
+    }
+    // classic amount mode (round 7)
     const pieces = makeChange(round.till, amount);
     if (pieces === null && amount === round.changeDue) {
       // computed correctly but the till cannot pay — steer into the ask flow
@@ -496,6 +515,7 @@
     waveT.clear();
     menuT.clear();
     flashT.clear();
+    errT.clear();
     session = newSession();
     round = null;
     flash = null;
@@ -590,13 +610,19 @@
     setTimeout(() => (heartPulse = false), 600);
   }
 
+  function showError(key: string) {
+    errorFlash = $t(key);
+    errT.clear();
+    errT.start(() => (errorFlash = null), 1100);
+  }
+
   function setPaused(on: boolean, menu = false) {
     if (session.finished) return;
     if (explaining) return; // explainer owns the freeze — no pause stacking (mirrors onKey)
     if (on) { askOpen = false; typedChange = ''; } // a stale open ask row would swallow the resume Escape
     paused = on;
     pauseMenu = on && menu;
-    const timers = [amendT, menuT, flashT, waveT];
+    const timers = [amendT, menuT, flashT, errT, waveT];
     for (const t of timers) on ? t.pause() : t.resume();
     if (!on) tick().then(() => focusFirst(mainEl));
   }
@@ -604,11 +630,11 @@
   function maybeExplain(id: string) {
     if (!markSeen(id)) return;
     explaining = id;
-    for (const tm of [amendT, menuT, flashT, waveT]) tm.pause();
+    for (const tm of [amendT, menuT, flashT, errT, waveT]) tm.pause();
   }
   function dismissExplain() {
     explaining = null;
-    for (const tm of [amendT, menuT, flashT, waveT]) tm.resume();
+    for (const tm of [amendT, menuT, flashT, errT, waveT]) tm.resume();
     focusFirst(mainEl);
   }
 
@@ -722,6 +748,7 @@
       waveT.clear();
       menuT.clear();
       flashT.clear();
+      errT.clear();
     };
   });
 </script>
@@ -786,6 +813,7 @@
             onask={onAsk} onnotenough={onNotEnough} ontipp={onTipp}
             tippHint={tipJar >= 50 ? ` (${formatEuro(50, symbolFirst)})` : ' (−25)'}
             typedDisplay={typedChange === '' ? '' : formatEuro(parseEntry(typedChange), symbolFirst)}
+            typedHint={$settings.amountEntry ? $t('game.typed-hint') : $t('game.typed-hint-piece')}
           />
         {/if}
       </div>
@@ -795,6 +823,7 @@
   <CoinBurst {burstKey} />
 
   {#if flash}<div class="flash">{flash}</div>{/if}
+  {#if errorFlash}<div class="flash err-flash">{errorFlash}</div>{/if}
 
   {#if session.finished && finalized}
     <EndOverlay
@@ -866,10 +895,11 @@
   .hint-line { color: var(--accent); animation: op-slide-up 0.2s ease-out; }
   .phase { display: flex; flex-direction: column; gap: 0.75rem; animation: op-slide-up 0.15s ease-out; }
   .flash {
-    position: fixed; inset: 16% 0 auto 0; margin: 0 auto; width: fit-content;
+    position: fixed; inset: 7% 0 auto 0; margin: 0 auto; width: fit-content;
     background: var(--cream); color: var(--ink);
     padding: 0.75rem 1.5rem; border-radius: var(--radius);
-    font-size: 1.3rem; font-weight: bold;
+    font-size: 1.15rem; font-weight: bold;
   }
+  .err-flash { inset: 14% 0 auto 0; background: var(--danger); color: var(--cream); font-size: 1rem; }
   .badge-toast { inset: auto 0 12% 0; background: var(--accent); }
 </style>
