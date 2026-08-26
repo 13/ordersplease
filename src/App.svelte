@@ -13,6 +13,7 @@
   import { settings } from './stores/settings';
   import { progress, unlockedLevel } from './stores/progress';
   import { focusFirst } from './lib/focus';
+  import { setVolume } from './lib/sound';
 
   const gameLevel = $derived.by(() => {
     const m = $route.match(/^game\/(\d+)$/);
@@ -37,6 +38,10 @@
 
   $effect(() => {
     document.documentElement.lang = $settings.locale;
+  });
+
+  $effect(() => {
+    setVolume($settings.volume ?? 1);
   });
 
   $effect(() => {
