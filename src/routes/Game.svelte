@@ -898,7 +898,7 @@
     />
   {/if}
 
-  {#if badgeToast}<div class="flash badge-toast">{badgeToast}</div>{/if}
+  {#if badgeToast}<div class="badge-toast">{badgeToast}</div>{/if}
 
   {#if explaining}
     <ExplainerCard
