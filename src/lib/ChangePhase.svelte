@@ -10,14 +10,14 @@
   let {
     paymentPieces, tillView, pile, showPileTotal, showKeys, finishMode, askOpen,
     ontake, onreturn, onconfirm, ontoggleask, onask, onnotenough, ontipp, tippHint = '',
-    showExtras = true, typedDisplay = '', typedHint = '',
+    showExtras = true, typedDisplay = '', typedHint = '', leftHand = false,
   }: {
     paymentPieces: Denom[]; tillView: Till; pile: Denom[];
     showPileTotal: boolean; showKeys: boolean; finishMode: boolean; askOpen: boolean;
     ontake: (d: Denom) => void; onreturn: (index: number) => void;
     onconfirm: () => void; ontoggleask: () => void; onask: (d: Denom) => void;
     onnotenough: () => void; ontipp: () => void; tippHint?: string; showExtras?: boolean;
-    typedDisplay?: string; typedHint?: string;
+    typedDisplay?: string; typedHint?: string; leftHand?: boolean;
   } = $props();
 </script>
 
@@ -30,7 +30,7 @@
 <TillGrid till={tillView} {ontake} disabled={finishMode} {showKeys} />
 <ChangePile {pile} showTotal={showPileTotal} {onreturn} />
 {#if askOpen}
-  <div class="ask-row">
+  <div class="ask-row" class:row-reverse={leftHand}>
     {#each COIN_DENOMS as d, i (d)}
       <button onclick={() => onask(d)}>
         <kbd>{i + 1}</kbd> {$t('game.ask-for')} {denomLabel(d)}?
@@ -45,7 +45,7 @@
   <button class="confirm" onclick={onconfirm}>
     <kbd>⏎</kbd> {finishMode ? $t('game.finish') : $t('game.confirm')}
   </button>
-  <div class="secondary">
+  <div class="secondary" class:row-reverse={leftHand}>
     <button class="ask" onclick={ontoggleask}><kbd>A</kbd> {$t('game.ask')}</button>
     {#if showExtras}
       <button class="ask" onclick={onnotenough}><kbd>N</kbd> {$t('game.not-enough')}</button>
@@ -89,4 +89,5 @@
     padding: 0 4px; font-size: 0.7rem; margin-right: 3px;
   }
   .confirm kbd { background: rgb(255 255 255 / 0.85); }
+  .row-reverse { flex-direction: row-reverse; }
 </style>

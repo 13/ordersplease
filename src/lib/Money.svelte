@@ -22,6 +22,9 @@
   type={interactive ? 'button' : undefined}
   class="money"
   class:note={isNote(denom)} class:coin={!isNote(denom)}
+  class:value-solid={denom < 500}
+  class:value-dashed={denom === 500 || denom === 1000}
+  class:value-double={denom === 2000 || denom === 5000}
   style="--money-color: {denomColor(denom)}"
   aria-label={label}
   role={interactive ? undefined : 'img'}
@@ -44,8 +47,11 @@
   }
   .money:disabled { opacity: 0.3; }
   span.money { cursor: default; }
-  .coin { width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgb(0 0 0 / 0.25); }
-  .note { width: 72px; height: 48px; border-radius: 6px; border: 2px solid rgb(0 0 0 / 0.25); }
+  .coin { width: 52px; height: 52px; border-radius: 50%; }
+  .note { width: 72px; height: 48px; border-radius: 6px; }
+  .value-solid { border: 2px solid rgb(0 0 0 / 0.35); }
+  .value-dashed { border: 2px dashed rgb(0 0 0 / 0.35); }
+  .value-double { border: 3px double rgb(0 0 0 / 0.45); }
   .badge {
     position: absolute; top: -6px; right: -6px;
     background: var(--ink); color: var(--cream);

@@ -859,6 +859,7 @@
             tippHint={tipJar >= 50 ? ` (${formatEuro(50, symbolFirst)})` : ' (−25)'}
             typedDisplay={typedChange === '' ? '' : formatEuro(parseEntry(typedChange), symbolFirst)}
             typedHint={$settings.amountEntry ? $t('game.typed-hint') : $t('game.typed-hint-piece')}
+            leftHand={$settings.leftHand ?? false}
           />
         {/if}
       </div>
