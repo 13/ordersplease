@@ -38,13 +38,14 @@ export function keynav(node: HTMLElement) {
     const v = getComputedStyle(el).getPropertyValue('--keynav-cols').trim();
     return v ? Number(v) : 1;
   }
-  const VIM: Record<string, string> = {
+  const KEYMAP: Record<string, string> = {
     h: 'ArrowLeft', j: 'ArrowDown', k: 'ArrowUp', l: 'ArrowRight',
+    '4': 'ArrowLeft', '6': 'ArrowRight', '8': 'ArrowUp', '2': 'ArrowDown',
   };
   function onKeydown(e: KeyboardEvent) {
     const target = e.target as HTMLElement | null;
     if (target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return;
-    const key = VIM[e.key] ?? e.key;
+    const key = KEYMAP[e.key] ?? e.key;
     const keys = ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'];
     if (!keys.includes(key)) return;
     const all = [...node.querySelectorAll<HTMLButtonElement>('button')];
