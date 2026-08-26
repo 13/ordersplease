@@ -911,10 +911,8 @@
   {#if paused}
     <PauseOverlay
       menu={pauseMenu}
-      soundOn={$settings.sound}
       onresume={() => setPaused(false)}
       onrestart={() => { setPaused(false); restart(); }}
-      ontogglesound={() => settings.update((s) => ({ ...s, sound: !s.sound }))}
       allowRestart={!dispute}
     />
   {/if}
