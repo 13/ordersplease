@@ -156,6 +156,7 @@ export default {
   'error.price-invalid': 'Price must be a positive multiple of 10 cents',
   'settings.title': 'Settings',
   'settings.language': 'Language',
+  'settings.language-auto': 'Automatic',
   'settings.sound': 'Sound',
   'settings.symbol-first': '€ before amount',
   'settings.show-prices': 'Always show prices',
