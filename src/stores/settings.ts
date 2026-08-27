@@ -13,6 +13,11 @@ export interface Settings {
   haptics: boolean;
   /** One-time migration marker: pieces entry became the default in 1.6.x. */
   piecesDefaultApplied?: boolean;
+  /** One-time migration marker: menu prices became visible by default in 1.9.3.
+   *  Deliberately absent from the defaults below — persisted merges stored
+   *  settings OVER the defaults, so a marker that has a default value is
+   *  already set for old saves and the migration could never fire. */
+  pricesDefaultApplied?: boolean;
   theme: 'dark' | 'light';
   fontScale: number;
   leftHand: boolean;
@@ -30,4 +35,10 @@ export const settings = persisted<Settings>('op.settings', {
 // toggle keeps working afterwards.
 settings.update((s) => (
   s.piecesDefaultApplied ? s : { ...s, amountEntry: false, piecesDefaultApplied: true }
+));
+
+// Prices became visible by default in 1.9.3. Saves made before that get shown
+// them ONCE; the toggle keeps working, so turning them back off sticks.
+settings.update((s) => (
+  s.pricesDefaultApplied ? s : { ...s, alwaysShowPrices: true, pricesDefaultApplied: true }
 ));

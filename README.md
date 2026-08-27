@@ -18,7 +18,12 @@
   at your weakest one.
 - **Daily challenge**: the same seeded 10-order gauntlet for everyone each
   day, with a copyable share line and its own streak.
-- **My menu**: enter your real bar's drinks and prices, train for your job.
+- **My menu**: enter your real bar's drinks and prices, train for your job —
+  drag the rows into the order you actually call them in, by finger, mouse or
+  keyboard (grab a row with Enter, move it with the arrows).
+- **Find it on the menu**: switch on "highlight ordered items" and the menu
+  rows for what the customer just asked for light up. Tabs only light up the
+  waves they have actually spoken, and split bills only the payer's share.
 - **Plays entirely without a mouse**: real focus management, key-cap hints on
   every till button, number keys for asks and disputes, and one-time
   explainers the first time each bar situation appears.
