@@ -13,10 +13,7 @@ export interface Settings {
   haptics: boolean;
   /** One-time migration marker: pieces entry became the default in 1.6.x. */
   piecesDefaultApplied?: boolean;
-  /** One-time migration marker: menu prices became visible by default in 1.9.3.
-   *  Deliberately absent from the defaults below — persisted merges stored
-   *  settings OVER the defaults, so a marker that has a default value is
-   *  already set for old saves and the migration could never fire. */
+  /** One-time migration marker: menu prices became visible by default in 1.9.3. */
   pricesDefaultApplied?: boolean;
   theme: 'dark' | 'light';
   fontScale: number;
@@ -26,9 +23,12 @@ export interface Settings {
 
 export const settings = persisted<Settings>('op.settings', {
   locale: 'auto', sound: true, symbolFirst: false, useCustomMenu: false, alwaysShowPrices: true, highlightOrdered: false, amountEntry: false, volume: 1, haptics: true,
-  piecesDefaultApplied: true,
   theme: 'dark', fontScale: 1, leftHand: false, accent: 'default',
 });
+
+// Migration markers are deliberately absent from the defaults above: persisted
+// merges a stored save OVER the defaults, so a marker carrying a default value
+// is already set for every old save and its migration could never fire.
 
 // Saves from before the pieces-mode default (or with the classic toggle left
 // on unknowingly) get reset ONCE to the piece-by-piece entry; the classic

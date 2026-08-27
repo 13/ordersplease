@@ -46,3 +46,20 @@ describe('prices-visible migration', () => {
     expect(s.alwaysShowPrices).toBe(true);
   });
 });
+
+describe('pieces-entry migration', () => {
+  it('flips a pre-1.6 save that carries no markers', async () => {
+    const s = await boot({ ...OLD_SAVE, amountEntry: true });
+    expect(s.amountEntry).toBe(false);
+    expect(s.piecesDefaultApplied).toBe(true);
+  });
+
+  it('leaves classic entry alone once the marker is stored', async () => {
+    const s = await boot({ ...OLD_SAVE, amountEntry: true, piecesDefaultApplied: true });
+    expect(s.amountEntry).toBe(true);
+  });
+
+  it('does not turn classic entry on for a fresh install', async () => {
+    expect((await boot()).amountEntry).toBe(false);
+  });
+});
