@@ -123,6 +123,9 @@
   let numpadLocked = $state(false);
   let numpadApi: NumpadApi | null = null;
   let splitGroups = $state<import('../core/order').OrderLine[][] | null>(null);
+  // tab rounds: only the waves the customer has actually spoken, so the menu
+  // highlight never reveals a wave ahead of the order text
+  let revealedTabLines = $state<import('../core/order').OrderLine[] | null>(null);
   let payerIndex = $state(0);
   let mainEl = $state<HTMLElement | null>(null);
   let groupBaseText = $state('');
@@ -159,6 +162,14 @@
   );
   const happyHour = $derived(happyHourActive(session));
   const pricedMenu = $derived(happyHour ? discountMenu(visibleMenu) : visibleMenu);
+  // Menu rows for the items in the order on screen. Split bills use round.order,
+  // which already holds only the current payer's group; tabs use the revealed
+  // waves. Cleared while paused, where the order text itself is masked.
+  const highlightIds = $derived(
+    !$settings.highlightOrdered || !round || paused
+      ? []
+      : (revealedTabLines ?? round.order.lines).map((l) => l.item.id),
+  );
 
   function startRound() {
     if (session.finished || round || flash) return;
@@ -170,6 +181,7 @@
     }
     numpadLocked = false;
     splitGroups = null;
+    revealedTabLines = null;
     payerIndex = 0;
     amendText = null;
     pile = [];
@@ -190,12 +202,14 @@
       const tab = generateTab(pricedMenu, session.params, session.rng);
       round = createRound(tab.merged, makePayment(tab.merged.totalCents), session.till, 'tab');
       orderText = renderOrder(tab.waves[0], $locale);
+      revealedTabLines = [...tab.waves[0].lines];
       numpadLocked = true;
       maybeExplain('tab');
       let waveIdx = 1;
       const revealNext = () => {
         if (!round || round.phase !== 'sum') return;
         orderText += ' ' + renderWave(tab.waves[waveIdx], $locale);
+        revealedTabLines = [...(revealedTabLines ?? []), ...tab.waves[waveIdx].lines];
         waveIdx += 1;
         if (waveIdx < tab.waves.length) waveT.start(revealNext, 3500);
         else numpadLocked = false;
@@ -850,7 +864,7 @@
     {#if amendText}<p class="order amend">“{amendText}”</p>{/if}
     {#if hintText}<p class="hint-line">💡 {hintText}</p>{/if}
 
-    <MenuCard menu={pricedMenu} pricesHidden={menuHidden} {symbolFirst} />
+    <MenuCard menu={pricedMenu} pricesHidden={menuHidden} {symbolFirst} {highlightIds} />
 
     {#key round.phase}
       <div class="phase">

@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { t, locale } from '../i18n';
   import { keynav } from '../lib/keynav';
   import { go } from '../lib/router';
   import { menuProfiles, activeProfileId, activeProfile } from '../stores/menu';
   import { settings } from '../stores/settings';
-  import { validateItem, parseImportedProfile, newProfileId } from '../core/menu';
+  import { validateItem, parseImportedProfile, newProfileId, moveMenuItem } from '../core/menu';
+  import { indexAtY } from '../lib/dragsort';
   import { MENU_PRESETS, presetItems, presetName } from '../core/menu-presets';
   import { formatEuro, parseEuro } from '../core/money';
 
@@ -19,6 +21,10 @@
   let editName = $state('');
   let editPrice = $state('');
   let editError = $state<string | null>(null);
+  let listEl = $state<HTMLUListElement | null>(null);
+  let grabbedId = $state<string | null>(null); // keyboard grab-and-move
+  let dragId = $state<string | null>(null);    // pointer drag
+  let dragPointer = -1;
 
   function updateActive(fn: (items: import('../core/menu').MenuItem[]) => import('../core/menu').MenuItem[]) {
     menuProfiles.update((profiles) => profiles.map((p) =>
@@ -43,6 +49,7 @@
 
   function remove(id: string) {
     if (editingId === id) editingId = null;
+    if (grabbedId === id) grabbedId = null;
     updateActive((items) => items.filter((x) => x.id !== id));
   }
 
@@ -79,6 +86,80 @@
   function toggleCategory(id: string) {
     updateActive((items) => items.map((x) =>
       x.id === id ? { ...x, category: x.category === 'food' ? 'drink' : 'food' } : x));
+  }
+
+  function handleEl(id: string) {
+    return listEl?.querySelector<HTMLButtonElement>(`[data-handle="${CSS.escape(id)}"]`) ?? null;
+  }
+
+  function indexOf(id: string) {
+    return ($activeProfile?.items ?? []).findIndex((x) => x.id === id);
+  }
+
+  /** Reordering relocates the row's DOM node, which can drop focus — keyboard
+   *  moves put it back on the same handle so the arrows can be held down. */
+  async function move(id: string, to: number, refocus: boolean) {
+    if (to === indexOf(id)) return;
+    updateActive((items) => moveMenuItem(items, items.findIndex((x) => x.id === id), to));
+    if (!refocus) return;
+    await tick();
+    handleEl(id)?.focus();
+  }
+
+  const UP = ['ArrowUp', 'k', '8'];
+  const DOWN = ['ArrowDown', 'j', '2'];
+
+  function onHandleKey(e: KeyboardEvent, id: string) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault(); // also suppresses the button's synthesized click
+      grabbedId = grabbedId === id ? null : id;
+      return;
+    }
+    if (grabbedId !== id) return;
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      grabbedId = null;
+      return;
+    }
+    const dir = UP.includes(e.key) ? -1 : DOWN.includes(e.key) ? 1 : 0;
+    if (dir === 0) return;
+    e.preventDefault();
+    e.stopPropagation(); // keynav would otherwise steal the arrow to move focus
+    move(id, indexOf(id) + dir, true);
+  }
+
+  function onListFocusOut(e: FocusEvent) {
+    // relatedTarget is null when a reorder relocates the focused node; only
+    // release the grab when focus demonstrably went somewhere else
+    const to = e.relatedTarget as Node | null;
+    if (to && !listEl?.contains(to)) grabbedId = null;
+  }
+
+  function onHandleDown(e: PointerEvent, id: string) {
+    if (e.button > 0 || !listEl) return;
+    // capture on the list, not the row: the row moves during the drag
+    listEl.setPointerCapture(e.pointerId);
+    dragPointer = e.pointerId;
+    dragId = id;
+    grabbedId = null;
+  }
+
+  function onListMove(e: PointerEvent) {
+    if (dragId === null || e.pointerId !== dragPointer || !listEl) return;
+    e.preventDefault();
+    const rows = [...listEl.querySelectorAll('li')].map((li) => {
+      const r = li.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom };
+    });
+    const to = indexAtY(rows, e.clientY);
+    if (to !== -1) move(dragId, to, false);
+  }
+
+  function endDrag(e: PointerEvent) {
+    if (e.pointerId !== dragPointer) return;
+    listEl?.releasePointerCapture(e.pointerId);
+    dragId = null;
+    dragPointer = -1;
   }
 
   function renameProfile(name: string) {
@@ -203,7 +284,13 @@
   </div>
   {#if importError}<p class="error">{$t(importError)}</p>{/if}
 
-  <ul>
+  <ul
+    bind:this={listEl}
+    onfocusout={onListFocusOut}
+    onpointermove={onListMove}
+    onpointerup={endDrag}
+    onpointercancel={endDrag}
+  >
     {#each $activeProfile?.items ?? [] as item (item.id)}
       {#if editingId === item.id}
         <li class="editing">
@@ -220,7 +307,15 @@
           {#if editError}<p class="error edit-error">{$t(editError)}</p>{/if}
         </li>
       {:else}
-        <li>
+        <li class:moving={grabbedId === item.id || dragId === item.id}>
+          <button
+            class="grip"
+            data-handle={item.id}
+            aria-label={$t('menu.reorder')}
+            aria-pressed={grabbedId === item.id}
+            onkeydown={(e) => onHandleKey(e, item.id)}
+            onpointerdown={(e) => onHandleDown(e, item.id)}
+          >≡</button>
           <button class="entry" onclick={() => startEdit(item)}>
             <span class="name">{item.name}</span>
             <span class="price">{formatEuro(item.priceCents, $settings.symbolFirst)}</span>
@@ -263,6 +358,17 @@
   .profiles select {
     flex: 1; min-width: 0; padding: 0.5rem; border-radius: var(--radius);
     border: none; font: inherit; background: var(--cream); color: var(--ink);
+  }
+  .grip {
+    background: none; color: var(--cream); opacity: 0.75;
+    min-width: 32px; min-height: 40px; font-size: 1.2rem; line-height: 1;
+    cursor: grab; touch-action: none; /* the handle drags, the page still scrolls */
+  }
+  .grip[aria-pressed='true'] { opacity: 1; color: var(--accent); }
+  li.moving {
+    background: var(--wood);
+    outline: 2px solid var(--accent);
+    box-shadow: var(--shadow);
   }
   .danger { background: var(--danger); color: var(--cream); }
   .danger:disabled { opacity: 0.4; }

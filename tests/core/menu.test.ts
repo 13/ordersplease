@@ -1,5 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_MENU, validateItem, applyPriceStyle, parseImportedProfile } from '$core/menu';
+import { DEFAULT_MENU, validateItem, applyPriceStyle, parseImportedProfile, moveMenuItem } from '$core/menu';
+
+describe('moveMenuItem', () => {
+  const ids = (m: { id: string }[]) => m.map((x) => x.id).join(',');
+  const four = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }] as never as
+    typeof DEFAULT_MENU;
+
+  it('moves an item down and up', () => {
+    expect(ids(moveMenuItem(four, 0, 2))).toBe('b,c,a,d');
+    expect(ids(moveMenuItem(four, 3, 1))).toBe('a,d,b,c');
+  });
+  it('is a no-op when the item does not move', () => {
+    expect(ids(moveMenuItem(four, 2, 2))).toBe('a,b,c,d');
+  });
+  it('clamps out-of-range targets to the ends', () => {
+    expect(ids(moveMenuItem(four, 1, -5))).toBe('b,a,c,d');
+    expect(ids(moveMenuItem(four, 1, 99))).toBe('a,c,d,b');
+  });
+  it('returns the list unchanged for an out-of-range source', () => {
+    expect(ids(moveMenuItem(four, -1, 0))).toBe('a,b,c,d');
+    expect(ids(moveMenuItem(four, 4, 0))).toBe('a,b,c,d');
+  });
+  it('does not mutate the input', () => {
+    const original = [...four];
+    moveMenuItem(four, 0, 3);
+    expect(four).toEqual(original);
+  });
+});
 
 describe('menu', () => {
   it('default menu has the spec drinks', () => {

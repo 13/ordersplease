@@ -38,6 +38,7 @@
   <label><input type="checkbox" bind:checked={$settings.sound} /> {$t('settings.sound')}</label>
   <label><input type="checkbox" bind:checked={$settings.symbolFirst} /> {$t('settings.symbol-first')}</label>
   <label><input type="checkbox" bind:checked={$settings.alwaysShowPrices} /> {$t('settings.show-prices')}</label>
+  <label><input type="checkbox" bind:checked={$settings.highlightOrdered} /> {$t('settings.highlight-ordered')}</label>
   <label><input type="checkbox" bind:checked={$settings.amountEntry} /> {$t('settings.amount-entry')}</label>
   <label><input type="checkbox" bind:checked={$settings.haptics} /> {$t('settings.haptics-label')}</label>
   <label>

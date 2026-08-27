@@ -39,6 +39,7 @@
           </label>
         {/if}
         <label><span class="ico">💶</span> <span class="label-text">{$t('settings.show-prices')}</span> <input type="checkbox" bind:checked={$settings.alwaysShowPrices} /></label>
+        <label><span class="ico">🖍️</span> <span class="label-text">{$t('settings.highlight-ordered')}</span> <input type="checkbox" bind:checked={$settings.highlightOrdered} /></label>
         <label><span class="ico">⌨️</span> <span class="label-text">{$t('settings.amount-entry')}</span> <input type="checkbox" bind:checked={$settings.amountEntry} /></label>
         <label><span class="ico">📳</span> <span class="label-text">{$t('settings.haptics-label')}</span> <input type="checkbox" bind:checked={$settings.haptics} /></label>
         <label>

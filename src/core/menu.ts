@@ -72,6 +72,19 @@ export function menuForLevel(menu: MenuItem[], level: number): MenuItem[] {
   return level >= 10 ? menu : menu.filter((m) => m.category !== 'food');
 }
 
+/** Move the item at `from` to index `to`, clamped to the list. Returns a new
+ *  array; an out-of-range `from` yields an unchanged copy. The array order is
+ *  the menu's display order, so this is all "sort my menu" needs. */
+export function moveMenuItem(items: MenuItem[], from: number, to: number): MenuItem[] {
+  const next = [...items];
+  if (from < 0 || from >= next.length) return next;
+  const target = Math.min(Math.max(to, 0), next.length - 1);
+  if (target === from) return next;
+  const [moved] = next.splice(from, 1);
+  next.splice(target, 0, moved);
+  return next;
+}
+
 /** Legacy stored menus: default category, snap prices to the 10c grid. Idempotent. */
 export function migrateMenuItems(items: MenuItem[]): MenuItem[] {
   return items.map((m) => ({
