@@ -2,8 +2,10 @@
 
 Date: 2026-08-27
 Scope: `src/i18n/` (new `detect.ts`, changed `index.ts`), `src/stores/settings.ts`,
-`src/routes/Settings.svelte`, `src/App.svelte`, both dictionaries. No route changes,
-no new supported languages.
+`src/stores/menu.ts`, both dictionaries, and the raw-locale consumers listed in
+architecture §5 (`App.svelte`, `Game.svelte`, `Tutorial.svelte`, `Stats.svelte`,
+`MenuEditor.svelte`, `Settings.svelte`). No route changes, no new supported
+languages.
 
 ## Problem
 
@@ -100,7 +102,7 @@ export const locale = derived([settings, browserLang], ([$s, $b]): Locale => {
 export const t = derived(locale, ($l) => (key: string): string => dicts[$l][key] ?? key);
 ```
 
-`t` keeps its exact current signature, so none of the ~30 call sites change.
+`t` keeps its exact current signature, so none of its call sites change.
 
 `browserLang` is a plain writable rather than a readable-with-start so tests can
 `browserLang.set('de')` directly — necessary because Node's `navigator.languages`
@@ -143,6 +145,38 @@ $effect(() => { document.documentElement.lang = $locale; });
 ```
 
 `index.html:2` keeps its static `lang="en"` as the pre-hydration value.
+
+### 5. Migrating raw `locale` consumers
+
+`t` is not the only consumer of the locale. Seventeen sites read
+`$settings.locale` (or `get(settings).locale`) directly and pass it to functions
+whose parameter is typed `'en' | 'de'`:
+
+| File | Sites | Consumes |
+| --- | --- | --- |
+| `src/routes/Game.svelte` | 10 | `renderOrder`, `renderWave`, `renderPayer`, `renderAmendment`, `hintFor`, `localizedDefaultMenu` |
+| `src/stores/menu.ts` | 3 | `localizedDefaultMenu`, profile naming |
+| `src/routes/Tutorial.svelte` | 2 | `localizedDefaultMenu`, `renderOrder` |
+| `src/routes/MenuEditor.svelte` | 2 | `presetName`, `presetItems` |
+| `src/routes/Stats.svelte` | 1 | `toLocaleDateString` |
+| `src/routes/Settings.svelte` | 1 | reset profile naming |
+| `src/App.svelte` | 1 | `<html lang>` |
+
+Widening `Settings.locale` to `LocalePref` therefore breaks `npm run check` at
+every one of them, and — worse — left uncorrected at runtime a German player on
+`'auto'` would read English order text while the UI chrome around it was German.
+
+Every one of these sites migrates to the resolved `locale` store: `$settings.locale`
+becomes `$locale`, and `get(settings).locale` becomes `get(locale)`. The
+consuming core functions keep their narrow `'en' | 'de'` parameter type — that
+narrowness is what makes the compiler enumerate the call sites for us, so it is
+a feature, not an obstacle. After the migration `settings.locale` is read in
+exactly two places: the `locale` store that resolves it, and the `<select>` that
+writes it.
+
+Import direction stays acyclic: `detect.ts` imports nothing, `settings.ts`
+imports `detect`, `i18n/index.ts` imports `settings` + `detect`, and everything
+else imports `i18n`.
 
 ## Data flow
 
@@ -189,8 +223,13 @@ New `tests/i18n/locale.test.ts` (node project):
 Dictionary parity (`Object.keys(en).length === Object.keys(de).length`) is worth
 asserting once here since we are adding a key to both.
 
-Existing suites must stay green untouched — that is itself the evidence that
-widening the type did not disturb the ~30 `$t` call sites.
+Existing suites must stay green untouched. `tests/core/text-order.test.ts` and
+`tests/core/menu.test.ts` already cover the render functions the migrated sites
+feed, so a green run after the migration is the evidence that swapping
+`$settings.locale` for `$locale` changed no behaviour for pinned locales.
+
+`npm run check` is a required gate for the migration task specifically: it is the
+mechanism that proves all seventeen sites were found.
 
 ## Out of scope / follow-ups
 
