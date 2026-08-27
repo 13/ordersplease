@@ -16,7 +16,7 @@
   import { focusFirst } from './lib/focus';
   import { setVolume } from './lib/sound';
   import { updateReady, doUpdate } from './stores/update';
-  import { t } from './i18n';
+  import { t, locale } from './i18n';
 
   const gameLevel = $derived.by(() => {
     const m = $route.match(/^game\/(\d+)$/);
@@ -41,7 +41,7 @@
   }
 
   $effect(() => {
-    document.documentElement.lang = $settings.locale;
+    document.documentElement.lang = $locale;
   });
 
   $effect(() => {

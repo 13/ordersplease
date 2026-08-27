@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../i18n';
+  import { t, locale } from '../i18n';
   import { keynav } from '../lib/keynav';
   import { go } from '../lib/router';
   import { settings } from '../stores/settings';
@@ -14,7 +14,7 @@
     if (!confirm($t('settings.reset-confirm'))) return;
     progress.set({ stars: {} });
     stats.set(structuredClone(EMPTY));
-    const name = $settings.locale === 'de' ? 'Meine Karte' : 'My Menu';
+    const name = $locale === 'de' ? 'Meine Karte' : 'My Menu';
     menuProfiles.set([{ id: 'my-menu', name, items: DEFAULT_MENU.map((m) => ({ ...m })) }]);
     activeProfileId.set('my-menu');
     history.set({});

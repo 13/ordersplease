@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../i18n';
+  import { t, locale } from '../i18n';
   import { keynav } from '../lib/keynav';
   import { go } from '../lib/router';
   import { stats, dayStreak } from '../stores/stats';
@@ -75,7 +75,7 @@
 
   const grid = $derived(monthGrid(viewYear, viewMonth));
   const monthLabel = $derived(
-    new Date(viewYear, viewMonth, 1).toLocaleDateString($settings.locale === 'de' ? 'de-DE' : 'en-US', {
+    new Date(viewYear, viewMonth, 1).toLocaleDateString($locale === 'de' ? 'de-DE' : 'en-US', {
       month: 'long', year: 'numeric',
     }),
   );

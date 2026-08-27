@@ -1,7 +1,7 @@
 <!-- src/routes/Tutorial.svelte -->
 <script lang="ts">
   import { get } from 'svelte/store';
-  import { t } from '../i18n';
+  import { t, locale } from '../i18n';
   import { go } from '../lib/router';
   import { settings } from '../stores/settings';
   import { markSeen } from '../stores/seen';
@@ -18,7 +18,7 @@
   import ChangePhase from '../lib/ChangePhase.svelte';
   import type { NumpadApi } from '../lib/Numpad.svelte';
 
-  const menu = $derived(localizedDefaultMenu($settings.locale));
+  const menu = $derived(localizedDefaultMenu($locale));
   let step = $state(0);
   let round = $state<RoundState | null>(null);
   let pile = $state<Denom[]>([]);
@@ -41,7 +41,7 @@
   }
   const orderText = $derived.by(() => {
     if (!round) return '';
-    return renderOrder(round.order, $settings.locale);
+    return renderOrder(round.order, $locale);
   });
 
   function startStep(i: number) {

@@ -4,6 +4,7 @@ import {
   DEFAULT_MENU, localizedDefaultMenu, migrateMenuItems, type MenuItem, type MenuProfile,
 } from '../core/menu';
 import { settings } from './settings';
+import { locale } from '../i18n';
 
 // legacy single-menu store — read once to migrate, never written to again
 const legacyCustomMenu = persisted<MenuItem[]>(
@@ -13,7 +14,7 @@ const legacyCustomMenu = persisted<MenuItem[]>(
 
 function defaultProfiles(): MenuProfile[] {
   const items = migrateMenuItems(get(legacyCustomMenu));
-  const name = get(settings).locale === 'de' ? 'Meine Karte' : 'My Menu';
+  const name = get(locale) === 'de' ? 'Meine Karte' : 'My Menu';
   return [{ id: 'my-menu', name, items }];
 }
 
@@ -26,10 +27,10 @@ export const activeProfile = derived(
 );
 
 export const activeMenu = derived(
-  [settings, menuProfiles, activeProfileId],
-  ([$s, $profiles, $id]) => {
-    if (!$s.useCustomMenu) return localizedDefaultMenu($s.locale);
+  [settings, locale, menuProfiles, activeProfileId],
+  ([$s, $l, $profiles, $id]) => {
+    if (!$s.useCustomMenu) return localizedDefaultMenu($l);
     const p = $profiles.find((pr) => pr.id === $id) ?? $profiles[0];
-    return p && p.items.length > 0 ? p.items : localizedDefaultMenu($s.locale);
+    return p && p.items.length > 0 ? p.items : localizedDefaultMenu($l);
   },
 );
