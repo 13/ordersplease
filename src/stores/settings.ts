@@ -20,7 +20,7 @@ export interface Settings {
 }
 
 export const settings = persisted<Settings>('op.settings', {
-  locale: 'auto', sound: true, symbolFirst: false, useCustomMenu: false, alwaysShowPrices: false, highlightOrdered: false, amountEntry: false, volume: 1, haptics: true,
+  locale: 'auto', sound: true, symbolFirst: false, useCustomMenu: false, alwaysShowPrices: true, highlightOrdered: false, amountEntry: false, volume: 1, haptics: true,
   piecesDefaultApplied: true,
   theme: 'dark', fontScale: 1, leftHand: false, accent: 'default',
 });
