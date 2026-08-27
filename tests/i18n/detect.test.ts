@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pickLocale, detectLocale, SUPPORTED, LANG_NAMES } from '../../src/i18n/detect';
+import { pickLocale, detectLocale, navigatorTags, SUPPORTED, LANG_NAMES } from '../../src/i18n/detect';
 
 describe('pickLocale', () => {
   it('matches an exact supported tag', () => {
@@ -41,5 +41,46 @@ describe('detectLocale', () => {
 describe('LANG_NAMES', () => {
   it('has an endonym for every supported locale', () => {
     expect(LANG_NAMES).toEqual({ en: 'English', de: 'Deutsch' });
+  });
+});
+
+describe('navigatorTags', () => {
+  it('prefers the languages list', () => {
+    expect(navigatorTags({ languages: ['de', 'en'], language: 'fr' })).toEqual(['de', 'en']);
+  });
+
+  it('falls back to the single language when the list is absent', () => {
+    expect(navigatorTags({ language: 'de-AT' })).toEqual(['de-AT']);
+  });
+
+  it('falls back to the single language when the list is empty', () => {
+    expect(navigatorTags({ languages: [], language: 'de' })).toEqual(['de']);
+  });
+
+  it('yields nothing for a missing or empty navigator', () => {
+    expect(navigatorTags(undefined)).toEqual([]);
+    expect(navigatorTags({})).toEqual([]);
+  });
+});
+
+describe('detectLocale with an injected navigator', () => {
+  it('picks the first supported language from the list', () => {
+    expect(detectLocale({ languages: ['fr', 'de', 'en'] })).toBe('de');
+  });
+
+  it('reads the single language when there is no list', () => {
+    expect(detectLocale({ language: 'de-CH' })).toBe('de');
+  });
+
+  it('prefers the list over the single language', () => {
+    expect(detectLocale({ languages: ['en'], language: 'de' })).toBe('en');
+  });
+
+  it('falls back to en when the navigator is missing', () => {
+    expect(detectLocale(undefined)).toBe('en');
+  });
+
+  it('falls back to en when nothing is supported', () => {
+    expect(detectLocale({ languages: ['fr', 'it'] })).toBe('en');
   });
 });

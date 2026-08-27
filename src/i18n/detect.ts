@@ -19,9 +19,17 @@ export function pickLocale(tags: readonly string[]): Locale {
   return FALLBACK;
 }
 
+type NavigatorLike = { languages?: readonly string[]; language?: string };
+
+/** The language tags a navigator advertises, most preferred first. */
+export function navigatorTags(nav: NavigatorLike | undefined): readonly string[] {
+  if (nav?.languages?.length) return nav.languages;
+  return nav?.language ? [nav.language] : [];
+}
+
 /** pickLocale over navigator.languages, with navigator.language as backup. */
-export function detectLocale(): Locale {
-  const nav = globalThis.navigator as { languages?: readonly string[]; language?: string } | undefined;
-  const tags = nav?.languages?.length ? nav.languages : nav?.language ? [nav.language] : [];
-  return pickLocale(tags);
+export function detectLocale(
+  nav: NavigatorLike | undefined = globalThis.navigator as NavigatorLike | undefined,
+): Locale {
+  return pickLocale(navigatorTags(nav));
 }
