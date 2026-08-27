@@ -4,7 +4,7 @@
 
 **Goal:** Add a persistent `'auto'` locale mode that resolves the UI language from the browser on every load, selectable and overridable in Settings, without changing anything for existing players.
 
-**Architecture:** A pure `src/i18n/detect.ts` turns a list of BCP-47 tags into one of the two supported locales. `settings.locale` widens to `'auto' | 'en' | 'de'` and defaults to `'auto'`. A new derived store `locale` in `src/i18n/index.ts` collapses `'auto'` to a concrete locale; `t` derives from it, and every site that used to read `settings.locale` raw migrates to it.
+**Architecture:** A pure `src/i18n/detect.ts` turns a list of BCP-47 tags into one of the two supported locales. A derived store `locale` in `src/i18n/index.ts` becomes the single place the rendered language is read from, and every one of the seventeen sites that read `settings.locale` raw migrates to it while it is still a pass-through. Only then does `settings.locale` widen to `'auto' | 'en' | 'de'` and default to `'auto'`, with the store resolving `'auto'` against the browser — a change that by then touches two files.
 
 **Tech Stack:** Svelte 5 (runes), TypeScript, Svelte stores (`writable`/`derived`), Vitest (two projects: `node` and `jsdom`), `@testing-library/svelte`.
 
@@ -18,7 +18,7 @@
 - Import direction must stay acyclic: `detect.ts` imports nothing → `settings.ts` imports `detect` → `i18n/index.ts` imports `settings` + `detect` → everything else imports `i18n`.
 - Existing dictionaries have 262 keys each and must stay equal in count.
 - Language names in the UI (`English`, `Deutsch`) are endonyms and are deliberately **not** translated.
-- Run tests with `npx vitest run`, typecheck with `npm run check`. Both must pass before any commit.
+- Run tests with `npx vitest run`, typecheck with `npm run check`. Both must pass before **every** commit — there are no exceptions, and the task order below is arranged specifically so that no commit is ever left red.
 
 ---
 
@@ -142,109 +142,29 @@ git commit -m "feat(i18n): add browser language detection core"
 
 ---
 
-### Task 2: Widen the setting and default it to auto
-
-**Files:**
-- Modify: `src/stores/settings.ts:4` (the `locale` field) and `src/stores/settings.ts:21` (the default)
-- Test: `tests/i18n/settings-locale.test.ts`
-
-**Interfaces:**
-- Consumes: `LocalePref` from Task 1.
-- Produces: `settings` store whose `.locale` is now `LocalePref`, defaulting to `'auto'`. Task 3 reads it.
-
-Note: this task deliberately leaves the codebase failing `npm run check` — widening the type breaks the seventeen raw consumers, which Task 4 fixes. Verify with tests here; the typecheck gate lands in Task 4.
-
-- [ ] **Step 1: Write the failing test**
-
-Create `tests/i18n/settings-locale.test.ts`:
-
-```ts
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { get } from 'svelte/store';
-
-const mem = new Map<string, string>();
-vi.stubGlobal('localStorage', {
-  getItem: (k: string) => mem.get(k) ?? null,
-  setItem: (k: string, v: string) => void mem.set(k, v),
-  removeItem: (k: string) => void mem.delete(k),
-});
-
-describe('settings.locale', () => {
-  beforeEach(() => {
-    mem.clear();
-    vi.resetModules();
-  });
-
-  it('defaults to auto on a fresh install', async () => {
-    const { settings } = await import('../../src/stores/settings');
-    expect(get(settings).locale).toBe('auto');
-  });
-
-  // Regression guard: existing players must not be re-languaged.
-  it('keeps a locale that was already saved', async () => {
-    mem.set('op.settings', JSON.stringify({ v: 1, data: { locale: 'en' } }));
-    const { settings } = await import('../../src/stores/settings');
-    expect(get(settings).locale).toBe('en');
-  });
-
-  it('keeps a saved de as well', async () => {
-    mem.set('op.settings', JSON.stringify({ v: 1, data: { locale: 'de' } }));
-    const { settings } = await import('../../src/stores/settings');
-    expect(get(settings).locale).toBe('de');
-  });
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `npx vitest run tests/i18n/settings-locale.test.ts`
-Expected: FAIL on the first test — `expected 'en' to be 'auto'`. The other two already pass; that is correct, they are the guard that must never break.
-
-- [ ] **Step 3: Write minimal implementation**
-
-In `src/stores/settings.ts`, add the import at the top of the file:
-
-```ts
-import type { LocalePref } from '../i18n/detect';
-```
-
-Change the interface field from `locale: 'en' | 'de';` to:
-
-```ts
-  locale: LocalePref;
-```
-
-Change the default object's first field from `locale: 'en',` to:
-
-```ts
-  locale: 'auto',
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `npx vitest run tests/i18n/settings-locale.test.ts`
-Expected: PASS, 3 tests.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/stores/settings.ts tests/i18n/settings-locale.test.ts
-git commit -m "feat(i18n): widen settings.locale to LocalePref, default auto"
-```
-
----
-
-### Task 3: Resolved-locale store
+### Task 2: Introduce the locale store and migrate every consumer
 
 **Files:**
 - Modify: `src/i18n/index.ts` (whole file — it is 9 lines today)
+- Modify: `src/App.svelte:44`
+- Modify: `src/stores/menu.ts:16`, `:31`, `:33`
+- Modify: `src/routes/Game.svelte:90`, `:192`, `:198`, `:214`, `:216`, `:219`, `:231`, `:277`, `:291`, `:462`
+- Modify: `src/routes/Tutorial.svelte:21`, `:44`
+- Modify: `src/routes/MenuEditor.svelte:112`, `:191`
+- Modify: `src/routes/Stats.svelte:78`
+- Modify: `src/routes/Settings.svelte:17`
 - Test: `tests/i18n/locale.test.ts`
 
 **Interfaces:**
-- Consumes: `Locale`, `FALLBACK`, `isLocale`, `detectLocale` from Task 1; `settings` from Task 2.
-- Produces: `browserLang: Writable<Locale>`, `locale: Readable<Locale>`, and `t` unchanged in signature (`Readable<(key: string) => string>`). Task 4 imports `locale` and `browserLang`.
+- Consumes: `Locale` from Task 1; the existing `settings` store.
+- Produces: `locale: Readable<Locale>` exported from `src/i18n`, and `t` unchanged in signature. Task 3 changes how `locale` resolves; Task 4 imports it.
 
-The current file is:
+**This task changes no behaviour.** It is a pure refactor: `locale` is a
+pass-through of `settings.locale`, and every raw consumer starts reading it
+instead. Doing this before the type widens is what keeps every commit green —
+after this task, adding `'auto'` touches exactly one file.
+
+The current `src/i18n/index.ts` is:
 
 ```ts
 import { derived } from 'svelte/store';
@@ -264,7 +184,7 @@ export const t = derived(settings, ($s) => (key: string): string =>
 Create `tests/i18n/locale.test.ts`:
 
 ```ts
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { get } from 'svelte/store';
 
 const mem = new Map<string, string>();
@@ -283,8 +203,246 @@ async function load(saved?: Record<string, unknown>) {
   return { ...i18n, settings };
 }
 
-describe('resolved locale', () => {
-  beforeEach(() => vi.resetModules());
+describe('locale store', () => {
+  it('exposes the saved locale', async () => {
+    const { locale } = await load({ locale: 'de' });
+    expect(get(locale)).toBe('de');
+  });
+
+  it('drives t', async () => {
+    const { t } = await load({ locale: 'de' });
+    expect(get(t)('home.play')).toBe('Spielen');
+  });
+
+  it('follows a change to the setting', async () => {
+    const { locale, t, settings } = await load({ locale: 'en' });
+    expect(get(t)('home.play')).toBe('Play');
+    settings.update((s) => ({ ...s, locale: 'de' }));
+    expect(get(locale)).toBe('de');
+    expect(get(t)('home.play')).toBe('Spielen');
+  });
+
+  it('keeps t returning the key for an unknown key', async () => {
+    const { t } = await load({ locale: 'en' });
+    expect(get(t)('no.such.key')).toBe('no.such.key');
+  });
+});
+
+describe('dictionary parity', () => {
+  it('en and de define the same keys', async () => {
+    const en = (await import('../../src/i18n/en')).default;
+    const de = (await import('../../src/i18n/de')).default;
+    expect(Object.keys(de).sort()).toEqual(Object.keys(en).sort());
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npx vitest run tests/i18n/locale.test.ts`
+Expected: FAIL — `locale` is not exported from `../../src/i18n`, so `get(locale)` throws `TypeError: Cannot read properties of undefined`.
+
+- [ ] **Step 3: Add the locale store**
+
+Replace the entire contents of `src/i18n/index.ts` with:
+
+```ts
+import { derived } from 'svelte/store';
+import { settings } from '../stores/settings';
+import { type Locale } from './detect';
+import en from './en';
+import de from './de';
+
+const dicts: Record<Locale, Record<string, string>> = { en, de };
+
+/** The concrete locale to render in. Task 3 teaches this to resolve 'auto'. */
+export const locale = derived(settings, ($s): Locale => $s.locale);
+
+export const t = derived(locale, ($l) => (key: string): string =>
+  dicts[$l][key] ?? key,
+);
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `npx vitest run tests/i18n/locale.test.ts`
+Expected: PASS, 5 tests.
+
+- [ ] **Step 5: Migrate `src/App.svelte`**
+
+Change the i18n import (line 20 currently reads `import { t } from './i18n';`):
+
+```ts
+  import { t, locale } from './i18n';
+```
+
+Change the effect at line 44 from `document.documentElement.lang = $settings.locale;` to:
+
+```ts
+    document.documentElement.lang = $locale;
+```
+
+- [ ] **Step 6: Migrate `src/stores/menu.ts`**
+
+Add the import after the `settings` import on line 6:
+
+```ts
+import { locale } from '../i18n';
+```
+
+Change line 16 from `const name = get(settings).locale === 'de' ? 'Meine Karte' : 'My Menu';` to:
+
+```ts
+  const name = get(locale) === 'de' ? 'Meine Karte' : 'My Menu';
+```
+
+Change the `activeMenu` derived (lines 29-35) to take `locale` for the language while keeping `settings` for `useCustomMenu`:
+
+```ts
+export const activeMenu = derived(
+  [settings, locale, menuProfiles, activeProfileId],
+  ([$s, $l, $profiles, $id]) => {
+    if (!$s.useCustomMenu) return localizedDefaultMenu($l);
+    const p = $profiles.find((pr) => pr.id === $id) ?? $profiles[0];
+    return p && p.items.length > 0 ? p.items : localizedDefaultMenu($l);
+  },
+);
+```
+
+- [ ] **Step 7: Migrate `src/routes/Game.svelte`**
+
+Change the i18n import:
+
+```ts
+  import { t, locale } from '../i18n';
+```
+
+Replace every `$settings.locale` with `$locale` (lines 192, 198, 214, 216, 219, 231, 277, 291, 462), and the `get(settings).locale` at line 90:
+
+```ts
+      isDaily ? localizedDefaultMenu(get(locale)) : get(activeMenu),
+```
+
+Verify none remain — run: `grep -n 'settings\.locale' src/routes/Game.svelte`
+Expected: no output.
+
+- [ ] **Step 8: Migrate `src/routes/Tutorial.svelte`**
+
+Add `locale` to the i18n import, then line 21:
+
+```ts
+  const menu = $derived(localizedDefaultMenu($locale));
+```
+
+and line 44:
+
+```ts
+    return renderOrder(round.order, $locale);
+```
+
+- [ ] **Step 9: Migrate `src/routes/MenuEditor.svelte`**
+
+Add `locale` to the i18n import, then line 112:
+
+```ts
+      { id, name: presetName(preset, $locale), items: presetItems(preset, $locale) },
+```
+
+and line 191:
+
+```svelte
+        <button onclick={() => loadPreset(preset.id)}>{presetName(preset, $locale)}</button>
+```
+
+- [ ] **Step 10: Migrate `src/routes/Stats.svelte`**
+
+Add `locale` to the i18n import, then line 78:
+
+```ts
+    new Date(viewYear, viewMonth, 1).toLocaleDateString($locale === 'de' ? 'de-DE' : 'en-US', {
+```
+
+Leave line 100's `localeCompare` alone — it is string comparison, unrelated.
+
+- [ ] **Step 11: Migrate `src/routes/Settings.svelte`**
+
+Change the i18n import:
+
+```ts
+  import { t, locale } from '../i18n';
+```
+
+Change line 17:
+
+```ts
+    const name = $locale === 'de' ? 'Meine Karte' : 'My Menu';
+```
+
+Leave line 31's `bind:value={$settings.locale}` as-is — the `<select>` writes the pref, which is correct.
+
+- [ ] **Step 12: Verify every consumer is migrated**
+
+Run: `grep -rn 'settings\.locale' src/`
+Expected: exactly two lines — `src/stores/settings.ts` (the interface field) and `src/routes/Settings.svelte:31` (the `bind:value`). Anything else is a missed site.
+
+- [ ] **Step 13: Typecheck and run the full suite**
+
+Run: `npm run check && npx vitest run`
+Expected: check exits 0; all tests pass. Because this task changes no behaviour, every pre-existing test — notably `tests/core/text-order.test.ts` and `tests/core/menu.test.ts` — must pass untouched. A failure here means the refactor changed something it should not have.
+
+- [ ] **Step 14: Commit**
+
+```bash
+git add src/i18n/index.ts src/App.svelte src/stores/menu.ts src/routes/Game.svelte src/routes/Tutorial.svelte src/routes/MenuEditor.svelte src/routes/Stats.svelte src/routes/Settings.svelte tests/i18n/locale.test.ts
+git commit -m "refactor(i18n): route every locale consumer through one store"
+```
+
+---
+
+### Task 3: Widen the setting and resolve auto
+
+**Files:**
+- Modify: `src/stores/settings.ts:4` (the `locale` field) and `src/stores/settings.ts:21` (the default)
+- Modify: `src/i18n/index.ts` (the `locale` derived, plus `browserLang` and the listener)
+- Test: `tests/i18n/auto-locale.test.ts`
+
+**Interfaces:**
+- Consumes: `LocalePref`, `Locale`, `FALLBACK`, `isLocale`, `detectLocale` from Task 1; the `locale` store from Task 2.
+- Produces: `browserLang: Writable<Locale>` exported from `src/i18n`; `settings.locale` is now `LocalePref`. Task 4 imports `browserLang`.
+
+This is the feature. Because Task 2 already routed every consumer through
+`locale`, widening the setting touches only these two files and `npm run check`
+stays green.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/i18n/auto-locale.test.ts`:
+
+```ts
+import { describe, it, expect, vi } from 'vitest';
+import { get } from 'svelte/store';
+
+const mem = new Map<string, string>();
+vi.stubGlobal('localStorage', {
+  getItem: (k: string) => mem.get(k) ?? null,
+  setItem: (k: string, v: string) => void mem.set(k, v),
+  removeItem: (k: string) => void mem.delete(k),
+});
+
+async function load(saved?: Record<string, unknown>) {
+  mem.clear();
+  if (saved) mem.set('op.settings', JSON.stringify({ v: 1, data: saved }));
+  vi.resetModules();
+  const i18n = await import('../../src/i18n');
+  const { settings } = await import('../../src/stores/settings');
+  return { ...i18n, settings };
+}
+
+describe('the auto pref', () => {
+  it('defaults to auto on a fresh install', async () => {
+    const { settings } = await load();
+    expect(get(settings).locale).toBe('auto');
+  });
 
   it('follows the browser when the pref is auto', async () => {
     const { locale, browserLang, t } = await load({ locale: 'auto' });
@@ -318,28 +476,50 @@ describe('resolved locale', () => {
     expect(get(locale)).toBe('en');
     expect(get(t)('home.play')).toBe('Play');
   });
-
-  it('keeps t returning the key for an unknown key', async () => {
-    const { t } = await load({ locale: 'en' });
-    expect(get(t)('no.such.key')).toBe('no.such.key');
-  });
 });
 
-describe('dictionary parity', () => {
-  it('en and de define the same keys', async () => {
-    const en = (await import('../../src/i18n/en')).default;
-    const de = (await import('../../src/i18n/de')).default;
-    expect(Object.keys(de).sort()).toEqual(Object.keys(en).sort());
+describe('existing saves', () => {
+  // Regression guard: existing players must not be re-languaged.
+  it('keeps a saved en', async () => {
+    const { settings, locale } = await load({ locale: 'en' });
+    expect(get(settings).locale).toBe('en');
+    expect(get(locale)).toBe('en');
+  });
+
+  it('keeps a saved de', async () => {
+    const { settings, locale } = await load({ locale: 'de' });
+    expect(get(settings).locale).toBe('de');
+    expect(get(locale)).toBe('de');
   });
 });
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run tests/i18n/locale.test.ts`
-Expected: FAIL — `browserLang` and `locale` are not exported from `../../src/i18n`, so destructuring yields `undefined` and `browserLang.set` throws `TypeError: Cannot read properties of undefined (reading 'set')`.
+Run: `npx vitest run tests/i18n/auto-locale.test.ts`
+Expected: FAIL — the first test reports `expected 'en' to be 'auto'`, and the `browserLang` tests throw `TypeError: Cannot read properties of undefined (reading 'set')`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 3: Widen the setting**
+
+In `src/stores/settings.ts`, add the import at the top of the file:
+
+```ts
+import type { LocalePref } from '../i18n/detect';
+```
+
+Change the interface field from `locale: 'en' | 'de';` to:
+
+```ts
+  locale: LocalePref;
+```
+
+Change the default object's first field from `locale: 'en',` to:
+
+```ts
+  locale: 'auto',
+```
+
+- [ ] **Step 4: Resolve auto in the store**
 
 Replace the entire contents of `src/i18n/index.ts` with:
 
@@ -370,174 +550,26 @@ export const t = derived(locale, ($l) => (key: string): string =>
 );
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 5: Run both locale suites**
 
-Run: `npx vitest run tests/i18n/locale.test.ts`
-Expected: PASS, 7 tests.
+Run: `npx vitest run tests/i18n/`
+Expected: PASS — `detect.test.ts` (9), `locale.test.ts` (5, still green: it never mentions `'auto'`), `auto-locale.test.ts` (8).
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/i18n/index.ts tests/i18n/locale.test.ts
-git commit -m "feat(i18n): derive a resolved locale store from pref and browser"
-```
-
----
-
-### Task 4: Migrate raw locale consumers
-
-**Files:**
-- Modify: `src/App.svelte:44`
-- Modify: `src/stores/menu.ts:16`, `:31`, `:33`
-- Modify: `src/routes/Game.svelte:90`, `:192`, `:198`, `:214`, `:216`, `:219`, `:231`, `:277`, `:291`, `:462`
-- Modify: `src/routes/Tutorial.svelte:21`, `:44`
-- Modify: `src/routes/MenuEditor.svelte:112`, `:191`
-- Modify: `src/routes/Stats.svelte:78`
-- Modify: `src/routes/Settings.svelte:17`
-
-**Interfaces:**
-- Consumes: `locale` from Task 3.
-- Produces: no new exports. After this task `settings.locale` is read in exactly two places — the `locale` store and the `<select>` in Settings.
-
-This is the task the type widening in Task 2 forces. `npm run check` is the oracle: it enumerates every site.
-
-- [ ] **Step 1: Run the typecheck to enumerate the failures**
-
-Run: `npm run check`
-Expected: FAIL, with errors of the form `Type 'LocalePref' is not assignable to parameter of type '"en" | "de"'` — one per raw consumer. Keep this list; it is the task's checklist.
-
-- [ ] **Step 2: Migrate `src/App.svelte`**
-
-Add `locale` to the existing i18n import (line 20 currently reads `import { t } from './i18n';`):
-
-```ts
-  import { t, locale } from './i18n';
-```
-
-Change the effect at line 44 from `document.documentElement.lang = $settings.locale;` to:
-
-```ts
-    document.documentElement.lang = $locale;
-```
-
-- [ ] **Step 3: Migrate `src/stores/menu.ts`**
-
-Add the import (after the `settings` import on line 6):
-
-```ts
-import { locale } from '../i18n';
-```
-
-Change line 16 from `const name = get(settings).locale === 'de' ? 'Meine Karte' : 'My Menu';` to:
-
-```ts
-  const name = get(locale) === 'de' ? 'Meine Karte' : 'My Menu';
-```
-
-Change the `activeMenu` derived (lines 29-35) to take `locale` instead of `settings` for the language, keeping `settings` for `useCustomMenu`:
-
-```ts
-export const activeMenu = derived(
-  [settings, locale, menuProfiles, activeProfileId],
-  ([$s, $l, $profiles, $id]) => {
-    if (!$s.useCustomMenu) return localizedDefaultMenu($l);
-    const p = $profiles.find((pr) => pr.id === $id) ?? $profiles[0];
-    return p && p.items.length > 0 ? p.items : localizedDefaultMenu($l);
-  },
-);
-```
-
-- [ ] **Step 4: Migrate `src/routes/Game.svelte`**
-
-Add `locale` to the existing `import { t } from '../i18n';`:
-
-```ts
-  import { t, locale } from '../i18n';
-```
-
-Replace every `$settings.locale` with `$locale` (lines 192, 198, 214, 216, 219, 231, 277, 291, 462) and the one `get(settings).locale` at line 90 with `get(locale)`:
-
-```ts
-      isDaily ? localizedDefaultMenu(get(locale)) : get(activeMenu),
-```
-
-Verify none remain in this file:
-
-Run: `grep -n 'settings\.locale' src/routes/Game.svelte`
-Expected: no output.
-
-- [ ] **Step 5: Migrate `src/routes/Tutorial.svelte`**
-
-Add `locale` to the i18n import, then change line 21 and line 44:
-
-```ts
-  const menu = $derived(localizedDefaultMenu($locale));
-```
-
-```ts
-    return renderOrder(round.order, $locale);
-```
-
-- [ ] **Step 6: Migrate `src/routes/MenuEditor.svelte`**
-
-Add `locale` to the i18n import, then line 112:
-
-```ts
-      { id, name: presetName(preset, $locale), items: presetItems(preset, $locale) },
-```
-
-and line 191:
-
-```svelte
-        <button onclick={() => loadPreset(preset.id)}>{presetName(preset, $locale)}</button>
-```
-
-- [ ] **Step 7: Migrate `src/routes/Stats.svelte`**
-
-Add `locale` to the i18n import, then line 78:
-
-```ts
-    new Date(viewYear, viewMonth, 1).toLocaleDateString($locale === 'de' ? 'de-DE' : 'en-US', {
-```
-
-Leave line 100's `localeCompare` alone — it is string comparison, unrelated.
-
-- [ ] **Step 8: Migrate `src/routes/Settings.svelte`**
-
-Add `locale` to the existing `import { t } from '../i18n';`:
-
-```ts
-  import { t, locale } from '../i18n';
-```
-
-Change line 17:
-
-```ts
-    const name = $locale === 'de' ? 'Meine Karte' : 'My Menu';
-```
-
-Leave line 31's `bind:value={$settings.locale}` as-is — the `<select>` writes the *pref*, which is correct.
-
-- [ ] **Step 9: Verify every consumer is migrated**
-
-Run: `grep -rn 'settings\.locale' src/`
-Expected: exactly two lines — `src/stores/settings.ts` (the interface field) and `src/routes/Settings.svelte:31` (the `bind:value`). Anything else is a missed site.
-
-- [ ] **Step 10: Typecheck and run the full suite**
+- [ ] **Step 6: Typecheck and run the full suite**
 
 Run: `npm run check && npx vitest run`
-Expected: check exits 0; all tests pass, including the pre-existing `tests/core/text-order.test.ts` and `tests/core/menu.test.ts` which prove the render paths still behave for pinned locales.
+Expected: check exits 0; all tests pass.
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/App.svelte src/stores/menu.ts src/routes/Game.svelte src/routes/Tutorial.svelte src/routes/MenuEditor.svelte src/routes/Stats.svelte src/routes/Settings.svelte
-git commit -m "refactor(i18n): read the resolved locale instead of the raw pref"
+git add src/stores/settings.ts src/i18n/index.ts tests/i18n/auto-locale.test.ts
+git commit -m "feat(i18n): add an auto locale mode that follows the browser"
 ```
 
 ---
 
-### Task 5: Settings UI
+### Task 4: Settings UI
 
 **Files:**
 - Modify: `src/routes/Settings.svelte:30-35` (the language `<label>`)
@@ -639,7 +671,7 @@ Expected: PASS, 3 tests.
 - [ ] **Step 5: Verify dictionary parity still holds**
 
 Run: `npx vitest run tests/i18n/locale.test.ts`
-Expected: PASS — the parity test from Task 3 confirms both dictionaries gained the key.
+Expected: PASS — the parity test from Task 2 confirms both dictionaries gained the key.
 
 - [ ] **Step 6: Typecheck and full suite**
 
@@ -655,13 +687,13 @@ git commit -m "feat(settings): add an Automatic language option showing its reso
 
 ---
 
-### Task 6: End-to-end verification
+### Task 5: End-to-end verification
 
 **Files:**
 - No source changes expected. If this task finds a defect, fix it here and note it in the commit.
 
 **Interfaces:**
-- Consumes: everything from Tasks 1-5.
+- Consumes: everything from Tasks 1-4.
 - Produces: nothing.
 
 - [ ] **Step 1: Full gate**
@@ -700,7 +732,7 @@ Skip this step if nothing changed.
 The feature is done when:
 
 - A fresh profile on a German browser opens the app in German; on any other browser, English.
-- An existing save with `locale: 'en'` still opens in English. (`tests/i18n/settings-locale.test.ts`)
+- An existing save with `locale: 'en'` still opens in English. (`tests/i18n/auto-locale.test.ts`)
 - Settings shows `Automatic (Deutsch)` / `Automatisch (Deutsch)` and switching to English or Deutsch pins it.
-- Order text, menu names, presets, stats month names and `<html lang>` all follow the resolved locale, not the raw pref. (Task 4 Step 9)
+- Order text, menu names, presets, stats month names and `<html lang>` all follow the resolved locale, not the raw pref. (Task 2 Step 12)
 - `npm run check`, `npx vitest run`, `npm run build` and `npm run e2e` all pass.
