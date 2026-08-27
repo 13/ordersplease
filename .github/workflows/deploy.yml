@@ -68,8 +68,12 @@ jobs:
               -q '.artifacts[] | select(.name=="github-pages") | .id'); do
             gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"
           done
-      - uses: actions/upload-pages-artifact@v3
+      # include-hidden-files is required: v4 stopped bundling dotfiles, and
+      # dist/.well-known/assetlinks.json is the Android TWA Digital Asset Links
+      # file. Without it, app-link verification for the Play Store build breaks.
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
+          include-hidden-files: true
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

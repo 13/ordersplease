@@ -76,8 +76,11 @@ describe('detectLocale with an injected navigator', () => {
     expect(detectLocale({ languages: ['en'], language: 'de' })).toBe('en');
   });
 
-  it('falls back to en when the navigator is missing', () => {
-    expect(detectLocale(undefined)).toBe('en');
+  // Not `detectLocale(undefined)` — that fires the default parameter and reads
+  // the ambient navigator, so it would pass on an English machine regardless.
+  it('falls back to en for a navigator advertising nothing', () => {
+    expect(detectLocale({})).toBe('en');
+    expect(detectLocale({ languages: [] })).toBe('en');
   });
 
   it('falls back to en when nothing is supported', () => {

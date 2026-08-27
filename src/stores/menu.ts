@@ -26,6 +26,11 @@ export const activeProfile = derived(
   ([$profiles, $id]) => $profiles.find((p) => p.id === $id) ?? $profiles[0] ?? null,
 );
 
+// `settings` reaches this derived twice: directly, and again through `locale`,
+// which derives from it. Point reads (`get(activeMenu)`) are unaffected, but a
+// long-lived subscriber — `$activeMenu` in a template — can observe one
+// intermediate value pairing a new `$s` with a stale `$l`. Resolve the locale
+// inside the callback if this ever gains one.
 export const activeMenu = derived(
   [settings, locale, menuProfiles, activeProfileId],
   ([$s, $l, $profiles, $id]) => {

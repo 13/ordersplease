@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render } from '@testing-library/svelte';
+import { render, fireEvent } from '@testing-library/svelte';
 import { get } from 'svelte/store';
 import Settings from '../../src/routes/Settings.svelte';
 import { settings } from '../../src/stores/settings';
@@ -33,5 +33,33 @@ describe('Settings language select', () => {
     expect(get(locale)).toBe('de');
     const select = getByLabelText('Sprache') as HTMLSelectElement;
     expect(select.options[0].textContent?.trim()).toBe('Automatisch (Deutsch)');
+  });
+
+  // The one write path this feature adds: a pinned player switching back to
+  // Automatic must store 'auto' as the pref and start following the browser.
+  it('stores auto and follows the browser when Automatic is picked', async () => {
+    settings.update((s) => ({ ...s, locale: 'en' }));
+    browserLang.set('de');
+    const { getByLabelText } = render(Settings);
+    const select = getByLabelText('Language') as HTMLSelectElement;
+    expect(get(locale)).toBe('en');
+
+    await fireEvent.change(select, { target: { value: 'auto' } });
+
+    expect(get(settings).locale).toBe('auto');
+    expect(get(locale)).toBe('de');
+  });
+
+  it('pins the chosen locale against the browser when Deutsch is picked', async () => {
+    browserLang.set('en');
+    const { getByLabelText } = render(Settings);
+    const select = getByLabelText('Language') as HTMLSelectElement;
+
+    await fireEvent.change(select, { target: { value: 'de' } });
+
+    expect(get(settings).locale).toBe('de');
+    expect(get(locale)).toBe('de');
+    browserLang.set('en');
+    expect(get(locale)).toBe('de');
   });
 });
