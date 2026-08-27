@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../i18n';
+  import { t, locale } from '../i18n';
   import { keynav } from '../lib/keynav';
   import { go } from '../lib/router';
   import { menuProfiles, activeProfileId, activeProfile } from '../stores/menu';
@@ -109,7 +109,7 @@
     const id = newProfileId();
     menuProfiles.update((profiles) => [
       ...profiles,
-      { id, name: presetName(preset, $settings.locale), items: presetItems(preset, $settings.locale) },
+      { id, name: presetName(preset, $locale), items: presetItems(preset, $locale) },
     ]);
     activeProfileId.set(id);
   }
@@ -188,7 +188,7 @@
     <span class="label">{$t('menu.presets')}</span>
     <div class="preset-row">
       {#each MENU_PRESETS as preset (preset.id)}
-        <button onclick={() => loadPreset(preset.id)}>{presetName(preset, $settings.locale)}</button>
+        <button onclick={() => loadPreset(preset.id)}>{presetName(preset, $locale)}</button>
       {/each}
     </div>
   </div>

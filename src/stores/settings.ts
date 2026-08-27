@@ -1,7 +1,8 @@
 import { persisted } from './persisted';
+import type { LocalePref } from '../i18n/detect';
 
 export interface Settings {
-  locale: 'en' | 'de';
+  locale: LocalePref;
   sound: boolean;
   symbolFirst: boolean;
   useCustomMenu: boolean;
@@ -18,7 +19,7 @@ export interface Settings {
 }
 
 export const settings = persisted<Settings>('op.settings', {
-  locale: 'en', sound: true, symbolFirst: false, useCustomMenu: false, alwaysShowPrices: false, amountEntry: false, volume: 1, haptics: true,
+  locale: 'auto', sound: true, symbolFirst: false, useCustomMenu: false, alwaysShowPrices: false, amountEntry: false, volume: 1, haptics: true,
   piecesDefaultApplied: true,
   theme: 'dark', fontScale: 1, leftHand: false, accent: 'default',
 });

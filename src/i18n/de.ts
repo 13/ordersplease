@@ -156,6 +156,7 @@ export default {
   'error.price-invalid': 'Preis muss ein positives Vielfaches von 10 Cent sein',
   'settings.title': 'Einstellungen',
   'settings.language': 'Sprache',
+  'settings.language-auto': 'Automatisch',
   'settings.sound': 'Ton',
   'settings.symbol-first': '€ vor dem Betrag',
   'settings.show-prices': 'Preise immer zeigen',

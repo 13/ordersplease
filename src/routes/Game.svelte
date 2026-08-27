@@ -7,7 +7,7 @@
   import { localizedDefaultMenu, menuForLevel } from '../core/menu';
   import { stats, recordRound, recordDay, recordTips } from '../stores/stats';
   import { progress, improveBest } from '../stores/progress';
-  import { t } from '../i18n';
+  import { t, locale } from '../i18n';
   import {
     createSession, tickSession, completeRound, completeSubRound, spawnCustomer, MAX_LIVES,
     effectiveLevel, patienceFrac,
@@ -87,7 +87,7 @@
     const upgraded = (p: DifficultyParams) => applyUpgrades(p, get(career).upgrades, mode);
     return createSession(
       mode, level,
-      isDaily ? localizedDefaultMenu(get(settings).locale) : get(activeMenu),
+      isDaily ? localizedDefaultMenu(get(locale)) : get(activeMenu),
       isDaily ? false : get(settings).useCustomMenu,
       seed,
       override ? upgraded(override) : mode === 'level' ? upgraded(paramsForLevel(level)) : undefined,
@@ -189,13 +189,13 @@
       // running tab: merged order drives the round; waves reveal over time
       const tab = generateTab(pricedMenu, session.params, session.rng);
       round = createRound(tab.merged, makePayment(tab.merged.totalCents), session.till, 'tab');
-      orderText = renderOrder(tab.waves[0], $settings.locale);
+      orderText = renderOrder(tab.waves[0], $locale);
       numpadLocked = true;
       maybeExplain('tab');
       let waveIdx = 1;
       const revealNext = () => {
         if (!round || round.phase !== 'sum') return;
-        orderText += ' ' + renderWave(tab.waves[waveIdx], $settings.locale);
+        orderText += ' ' + renderWave(tab.waves[waveIdx], $locale);
         waveIdx += 1;
         if (waveIdx < tab.waves.length) waveT.start(revealNext, 3500);
         else numpadLocked = false;
@@ -211,12 +211,12 @@
         splitGroups = groups;
         const sub = { lines: groups[0], totalCents: orderTotal(groups[0]) };
         round = createRound(sub, makePayment(sub.totalCents), session.till, 'split');
-        groupBaseText = renderOrder(order, $settings.locale);
+        groupBaseText = renderOrder(order, $locale);
         maybeExplain('split');
-        orderText = `${groupBaseText} ${renderPayer(groups[0], $settings.locale)}`;
+        orderText = `${groupBaseText} ${renderPayer(groups[0], $locale)}`;
       } else {
         round = createRound(order, makePayment(order.totalCents), session.till);
-        orderText = renderOrder(order, $settings.locale);
+        orderText = renderOrder(order, $locale);
         if (session.rng() < session.params.midOrderChangeProb) {
           const amended = amendOrder(order, session.rng);
           amendT.start(() => {
@@ -228,7 +228,7 @@
                 ...round, order: amended.order,
                 paymentPieces: pieces, paymentCents: piecesTotal(pieces),
               };
-              amendText = renderAmendment(amended.amendedLine, $settings.locale);
+              amendText = renderAmendment(amended.amendedLine, $locale);
             }
           }, 2500);
         }
@@ -274,7 +274,7 @@
     const ms = performance.now() - roundStartedAt;
     stats.update((s) => recordRound(s, done.errors, ms, false));
     session = completeSubRound(session, done, {
-      orderText: renderPayer(splitGroups[payerIndex], $settings.locale), ms,
+      orderText: renderPayer(splitGroups[payerIndex], $locale), ms,
     });
     if (hintDebt > 0) {
       const gained = session.roundLog.at(-1)?.scoreGained ?? 0;
@@ -288,7 +288,7 @@
       ? generateUnderPayment(sub.totalCents, session.rng)
       : generatePayment(sub.totalCents, session.params.paymentStyle, session.rng);
     round = createRound(sub, payment, session.till, 'split');
-    orderText = `${groupBaseText} ${renderPayer(group, $settings.locale)}`;
+    orderText = `${groupBaseText} ${renderPayer(group, $locale)}`;
     disputeRoll = session.rng();
     disputeOptRoll = session.rng();
     pile = [];
@@ -459,7 +459,7 @@
   function onTipp() {
     if (!round || dispute || paused || round.phase === 'done') return;
     round = markHint(round);
-    hintText = hintFor(round, hintIndex, $settings.locale);
+    hintText = hintFor(round, hintIndex, $locale);
     hintIndex += 1;
     const free = hintsUsedSession === 0 && freeFirstHint(get(career).upgrades, mode);
     hintsUsedSession += 1;

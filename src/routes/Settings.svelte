@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t } from '../i18n';
+  import { t, locale, browserLang } from '../i18n';
+  import { LANG_NAMES } from '../i18n/detect';
   import { keynav } from '../lib/keynav';
   import { go } from '../lib/router';
   import { settings } from '../stores/settings';
@@ -14,7 +15,7 @@
     if (!confirm($t('settings.reset-confirm'))) return;
     progress.set({ stars: {} });
     stats.set(structuredClone(EMPTY));
-    const name = $settings.locale === 'de' ? 'Meine Karte' : 'My Menu';
+    const name = $locale === 'de' ? 'Meine Karte' : 'My Menu';
     menuProfiles.set([{ id: 'my-menu', name, items: DEFAULT_MENU.map((m) => ({ ...m })) }]);
     activeProfileId.set('my-menu');
     history.set({});
@@ -29,6 +30,7 @@
   <label>
     {$t('settings.language')}
     <select bind:value={$settings.locale}>
+      <option value="auto">{$t('settings.language-auto')} ({LANG_NAMES[$browserLang]})</option>
       <option value="en">English</option>
       <option value="de">Deutsch</option>
     </select>
