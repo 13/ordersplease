@@ -126,7 +126,7 @@ export function detectLocale(): Locale {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run tests/i18n/detect.test.ts`
-Expected: PASS, 9 tests.
+Expected: PASS, 8 tests.
 
 - [ ] **Step 5: Typecheck**
 
@@ -383,7 +383,7 @@ Leave line 31's `bind:value={$settings.locale}` as-is — the `<select>` writes 
 - [ ] **Step 12: Verify every consumer is migrated**
 
 Run: `grep -rn 'settings\.locale' src/`
-Expected: exactly two lines — `src/stores/settings.ts` (the interface field) and `src/routes/Settings.svelte:31` (the `bind:value`). Anything else is a missed site.
+Expected: exactly one line — `src/routes/Settings.svelte:31` (the `bind:value`), which is correct: the `<select>` writes the pref. Anything else is a missed site. (`src/stores/settings.ts` does not match this grep — it declares the field as `locale:`, not `settings.locale`.)
 
 - [ ] **Step 13: Typecheck and run the full suite**
 
@@ -599,8 +599,8 @@ describe('Settings language select', () => {
   });
 
   it('offers automatic, English and Deutsch', () => {
-    const { getByRole } = render(Settings);
-    const select = getByRole('combobox') as HTMLSelectElement;
+    const { getByLabelText } = render(Settings);
+    const select = getByLabelText('Language') as HTMLSelectElement;
     expect([...select.options].map((o) => o.value)).toEqual(['auto', 'en', 'de']);
   });
 
@@ -609,16 +609,16 @@ describe('Settings language select', () => {
   it('labels the automatic option with what it would resolve to', () => {
     settings.update((s) => ({ ...s, locale: 'en' }));
     browserLang.set('de');
-    const { getByRole } = render(Settings);
-    const select = getByRole('combobox') as HTMLSelectElement;
+    const { getByLabelText } = render(Settings);
+    const select = getByLabelText('Language') as HTMLSelectElement;
     expect(select.options[0].textContent?.trim()).toBe('Automatic (Deutsch)');
   });
 
   it('renders German chrome when auto resolves to de', () => {
     browserLang.set('de');
-    const { getByRole } = render(Settings);
+    const { getByLabelText } = render(Settings);
     expect(get(locale)).toBe('de');
-    const select = getByRole('combobox') as HTMLSelectElement;
+    const select = getByLabelText('Sprache') as HTMLSelectElement;
     expect(select.options[0].textContent?.trim()).toBe('Automatisch (Deutsch)');
   });
 });
@@ -628,6 +628,8 @@ describe('Settings language select', () => {
 
 Run: `npx vitest run tests/components/settings-language.test.ts`
 Expected: FAIL on the first test — the select only has `['en','de']`.
+
+Query by label, not by `getByRole('combobox')`: `Settings.svelte` has a second `<select>` (font size), so a bare combobox query is ambiguous and throws `getMultipleElementsFoundError`.
 
 - [ ] **Step 3: Write minimal implementation**
 
@@ -709,7 +711,7 @@ Expected: PASS. The existing Playwright specs run against a browser whose langua
 - [ ] **Step 3: Confirm no raw pref reads leaked back in**
 
 Run: `grep -rn 'settings\.locale' src/`
-Expected: exactly two lines (`src/stores/settings.ts` interface field, `src/routes/Settings.svelte` `bind:value`).
+Expected: exactly one line — `src/routes/Settings.svelte` `bind:value`. (The interface field in `src/stores/settings.ts` reads `locale:` and does not match this grep.)
 
 - [ ] **Step 4: Confirm the listener is guarded**
 
